@@ -80,11 +80,11 @@ class CompilerPluginFunctionalTest {
         val output = result.output
         assertTrue(
             output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
-            "Expected compiler plugin marker not found in output. Output was:\n$output"
+            "Expected compiler plugin marker not found in output"
         )
         assertTrue(
-            output.contains("HELLO Hello from sample"),
-            "Expected application output 'HELLO Hello from sample' not found. Output was:\n$output"
+            output.contains("FLOCK Hello from sample"),
+            "Expected println output prefixed with 'FLOCK' not found"
         )
     }
 
