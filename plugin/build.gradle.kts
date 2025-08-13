@@ -10,9 +10,9 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("compiler-embeddable"))
+    compileOnly(kotlin("compiler-embeddable"))
 }
 
 kotlin {
-    jvmToolchain(24)
+    jvmToolchain(17)
 }

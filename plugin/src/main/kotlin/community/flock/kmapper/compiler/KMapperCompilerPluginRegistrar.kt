@@ -11,8 +11,8 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 class KMapperCompilerPluginRegistrar : CompilerPluginRegistrar() {
     override val supportsK2: Boolean = true
 
+    // K2-style entry point: we only log a marker here to validate plugin loading in tests
     override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-        // Minimal marker to verify the plugin is loaded during compilation
         val collector: MessageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY) ?: MessageCollector.NONE
         collector.report(CompilerMessageSeverity.INFO, "[KMapperPlugin] Compiler plugin registrar loaded")
     }
