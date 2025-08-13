@@ -40,6 +40,7 @@ class CompilerPluginFunctionalTest {
             """
             |plugins {
             |    kotlin("jvm") version "2.2.0"
+            |    application
             |}
             |repositories { mavenCentral() }
             |dependencies {
@@ -50,6 +51,9 @@ class CompilerPluginFunctionalTest {
             |  compilerOptions {
             |    freeCompilerArgs.add("-Xplugin=${'$'}{pluginJarPath}")
             |  }
+            |}
+            |application {
+            |  mainClass.set("sample.AppKt")
             |}
             |""".trimMargin().replace("${'$'}{pluginJarPath}", pluginJar.absolutePath.replace("\\", "\\\\"))
         )
@@ -69,7 +73,7 @@ class CompilerPluginFunctionalTest {
 
         val result: BuildResult = GradleRunner.create()
             .withProjectDir(tempDir.toFile())
-            .withArguments("compileKotlin", "--info")
+            .withArguments("run", "--info")
             .forwardOutput()
             .build()
 
@@ -77,6 +81,10 @@ class CompilerPluginFunctionalTest {
         assertTrue(
             output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
             "Expected compiler plugin marker not found in output. Output was:\n$output"
+        )
+        assertTrue(
+            output.contains("HELLO Hello from sample"),
+            "Expected application output 'HELLO Hello from sample' not found. Output was:\n$output"
         )
     }
 
