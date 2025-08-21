@@ -1,5 +1,6 @@
 package community.flock.kmapper.compiler
 
+import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
@@ -12,13 +13,14 @@ import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
 class KMapperCompilerPluginRegistrar : CompilerPluginRegistrar() {
     override val supportsK2: Boolean = true
 
-    // K2-style entry point: register IR extension and log marker
     override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
         val collector: MessageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY) ?: MessageCollector.NONE
         collector.report(CompilerMessageSeverity.INFO, "[KMapperPlugin] Compiler plugin registrar loaded")
 
-        FirExtensionRegistrarAdapter.registerExtension(
-            KMapperFirExtensionRegistar()
-        )
+        // Register FIR extension using proper K2 adapter
+        FirExtensionRegistrarAdapter.registerExtension(FlockFirExtensionRegistrar())
+        
+        // Register IR extension for code generation
+        IrGenerationExtension.registerExtension(FlockExtension())
     }
 }

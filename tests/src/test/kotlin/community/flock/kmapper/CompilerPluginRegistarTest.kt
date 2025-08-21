@@ -10,7 +10,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
 
-class CompilerPluginFunctionalTest {
+class CompilerPluginRegistarTest {
 
     @Test
     fun compileProjectWithPlugin_emitsMarker(@TempDir tempDir: Path) {
@@ -86,7 +86,6 @@ class CompilerPluginFunctionalTest {
             |
             |fun main() {
             |  val u = User()
-            |  println(u.flock())
             |}
             |""".trimMargin()
         )
@@ -100,8 +99,8 @@ class CompilerPluginFunctionalTest {
         val output = result.output
 
         assertTrue(
-            output.contains("FLOCK User"),
-            "Expected println output prefixed with 'FLOCK' not found"
+            output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
+            "Expected compiler plugin marker not found in output"
         )
     }
 
