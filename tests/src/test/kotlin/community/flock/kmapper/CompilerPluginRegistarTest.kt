@@ -105,7 +105,7 @@ class CompilerPluginRegistarTest {
     }
 
     private fun locatePluginJar(): File {
-        val libsDir = File("../plugin/build/libs").absoluteFile.normalize()
+        val libsDir = File("../compiler-plugin/build/libs").absoluteFile.normalize()
         if (!libsDir.isDirectory) return File("nonexistent")
         val jar = Files.list(libsDir.toPath())
             .filter { it.toString().endsWith(".jar") }

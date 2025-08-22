@@ -2,8 +2,8 @@ plugins {
     kotlin("jvm") version "2.2.20-RC"
 }
 
-group = "community.flock"
-version = "1.0-SNAPSHOT"
+group = "community.flock.kmapper"
+version = "0.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
