@@ -4,8 +4,10 @@ import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.extensions.*
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.plugin.createMemberFunction
+import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.constructStarProjectedType
+import org.jetbrains.kotlin.fir.types.ConeTypeParameterType
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -54,15 +56,22 @@ class FlockFirDeclarationGenerationExtension(
             return emptyList()
         }
 
-        // Get String type from built-ins
-        val stringType = session.builtinTypes.stringType.coneType
-
         val flockFunction = createMemberFunction(
             owner = classSymbol,
             key = FlockKey,
             name = callableId.callableName,
-            returnType = stringType,
-        )
+            returnTypeProvider = { typeParameters ->
+                // Return the first type parameter (T)
+                if (typeParameters.isNotEmpty()) {
+                    typeParameters.first().symbol.defaultType
+                } else {
+                    session.builtinTypes.anyType.coneType
+                }
+            }
+        ) {
+            // Add type parameter T
+            typeParameter(Name.identifier("T"))
+        }
 
         return listOf(flockFunction.symbol)
     }
