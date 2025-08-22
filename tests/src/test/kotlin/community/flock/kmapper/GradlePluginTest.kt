@@ -82,7 +82,7 @@ class GradlePluginTest {
             |
             |fun main() {
             |  val u = User()
-            |  println(u.flock())
+            |  println(u.to())
             |}
             |""".trimMargin()
         )

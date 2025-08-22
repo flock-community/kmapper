@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.name.FqName
 
 /**
- * IR visitor that generates method bodies for FIR-generated flock() methods
+ * IR visitor that generates method bodies for FIR-generated to() methods
  */
 class FlockIrVisitor(
     private val context: IrPluginContext
@@ -26,14 +26,14 @@ class FlockIrVisitor(
     override fun visitSimpleFunction(declaration: IrSimpleFunction) {
         super.visitSimpleFunction(declaration)
         
-        // Check if this is a flock() method that needs a body
-        if (declaration.name.asString() == "flock" && 
+        // Check if this is a to() method that needs a body
+        if (declaration.name.asString() == "to" &&
             declaration.body == null && 
             declaration.parent is IrClass) {
             
             val parentClass = declaration.parent as IrClass
             if (parentClass.hasAnnotation(FLOCK_ANNOTATION_FQN)) {
-                println("[DEBUG] Generating body for flock() method in ${parentClass.name}")
+                println("[DEBUG] Generating body for to() method in ${parentClass.name}")
                 generateFlockMethodBody(declaration, parentClass)
             }
         }
@@ -46,6 +46,6 @@ class FlockIrVisitor(
             +irReturn(irString("FLOCK ${parentClass.name}"))
         }
         
-        println("[DEBUG] Successfully generated body for flock() method in ${parentClass.name}")
+        println("[DEBUG] Successfully generated body for to() method in ${parentClass.name}")
     }
 }

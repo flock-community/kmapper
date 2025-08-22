@@ -11,14 +11,14 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 /**
- * FIR declaration generation extension that adds flock() method to @Flock annotated classes
+ * FIR declaration generation extension that adds to() method to @Flock annotated classes
  */
 class FlockFirDeclarationGenerationExtension(
     session: FirSession,
 ) : FirDeclarationGenerationExtension(session) {
     
     companion object {
-        val FLOCK_FUN_NAME = Name.identifier("flock")
+        val FLOCK_FUN_NAME = Name.identifier("to")
         
         private val FLOCK_PREDICATE = DeclarationPredicate.create {
             annotated(FqName("community.flock.kmapper.Flock"))

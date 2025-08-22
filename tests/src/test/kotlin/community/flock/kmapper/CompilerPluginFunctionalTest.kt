@@ -71,7 +71,7 @@ class CompilerPluginFunctionalTest {
             |annotation class Flock
             |""".trimMargin()
         )
-        // App code: just println to test prefixing; no flock() call required
+        // App code: just println to test prefixing; no to() call required
         Files.writeString(
             srcDir.resolve("App.kt"),
             """
@@ -86,7 +86,7 @@ class CompilerPluginFunctionalTest {
             |
             |fun main() {
             |  val u = User()
-            |  println(u.flock())
+            |  println(u.to())
             |}
             |""".trimMargin()
         )
