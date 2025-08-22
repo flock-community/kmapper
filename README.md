@@ -140,7 +140,7 @@ The plugin registers both extensions to support the K2 compiler frontend while m
 - **Group**: `community.flock`
 - **Version**: `1.0-SNAPSHOT`
 - **Kotlin Version**: `2.2.20-RC`
-- **JVM Toolchain**: 24
+- **JVM Toolchain**: 21
 - **Plugin API**: Uses Kotlin's `@OptIn(ExperimentalCompilerApi::class)`
 
 ## License
