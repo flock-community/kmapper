@@ -86,7 +86,7 @@ class CompilerPluginFunctionalTest {
             |
             |fun main() {
             |  val u = User()
-            |  println(u.to())
+            |  println(u.to<String>("testName"))
             |}
             |""".trimMargin()
         )

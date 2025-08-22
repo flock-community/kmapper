@@ -71,6 +71,8 @@ class FlockFirDeclarationGenerationExtension(
         ) {
             // Add type parameter T
             typeParameter(Name.identifier("T"))
+            // Add name parameter of type String
+            valueParameter(Name.identifier("name"), session.builtinTypes.stringType.coneType)
         }
 
         return listOf(flockFunction.symbol)
