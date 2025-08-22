@@ -47,7 +47,7 @@ class CompilerPluginRegistarTest {
             |    implementation(kotlin("stdlib"))
             |}
             |kotlin {
-            |  jvmToolchain(17)
+            |  jvmToolchain(21)
             |  compilerOptions {
             |    freeCompilerArgs.add("-Xplugin=${'$'}{pluginJarPath}")
             |  }
