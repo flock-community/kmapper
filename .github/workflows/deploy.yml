@@ -20,10 +20,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Set up JDK 17
+    - name: Set up JDK
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
         
     - name: Setup Gradle
@@ -34,7 +34,7 @@ jobs:
       run: |
         echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
         sed -i 's/version = ".*"/version = "${{ github.event.inputs.version }}"/' build.gradle.kts
-        
+
     - name: Set version from release
       if: github.event_name == 'release'
       run: |
