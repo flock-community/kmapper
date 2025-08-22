@@ -3,6 +3,8 @@ plugins {
     id("com.github.gmazzo.buildconfig") version "5.6.5"
     id("java-gradle-plugin")
     id("maven-publish")
+    id("org.jetbrains.dokka")
+    signing
 }
 
 version = rootProject.version
@@ -22,6 +24,11 @@ dependencies {
     implementation(kotlin("gradle-plugin-api"))
 
     testImplementation(kotlin("test-junit5"))
+}
+
+val javadocJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("javadoc")
+    from(tasks.dokkaHtml)
 }
 
 buildConfig {
@@ -50,5 +57,49 @@ gradlePlugin {
             description = "FlockPlugin"
             implementationClass = "community.flock.kmapper.gradle.plugin.FlockGradlePlugin"
         }
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications.withType<MavenPublication> {
+            artifact(javadocJar)
+            
+            pom {
+                name.set("KMapper Gradle Plugin")
+                description.set("Gradle plugin for KMapper")
+                url.set("https://github.com/flock-community/kmapper")
+                
+                licenses {
+                    license {
+                        name.set("Apache License 2.0")
+                        url.set("https://www.apache.org/licenses/LICENSE-2.0")
+                    }
+                }
+                
+                developers {
+                    developer {
+                        id.set("flock-community")
+                        name.set("Flock Community")
+                        email.set("info@flock.community")
+                    }
+                }
+                
+                scm {
+                    connection.set("scm:git:git://github.com/flock-community/kmapper.git")
+                    developerConnection.set("scm:git:ssh://github.com:flock-community/kmapper.git")
+                    url.set("https://github.com/flock-community/kmapper")
+                }
+            }
+        }
+    }
+}
+
+signing {
+    val signingKey = System.getenv("GPG_PRIVATE_KEY")
+    val signingPassword = System.getenv("GPG_PASSPHRASE")
+    if (signingKey != null && signingPassword != null) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign(publishing.publications)
     }
 }
