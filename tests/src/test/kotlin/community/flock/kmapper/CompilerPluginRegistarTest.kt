@@ -80,12 +80,12 @@ class CompilerPluginRegistarTest {
             |import community.flock.kmapper.Flock
             |
             |@Flock
-            |class User {
-            |  override fun toString(): String = "User"
-            |}
+            |data class User(val firstName: String, val lastName: String)
             |
             |fun main() {
-            |  val u = User()
+            |  val u = User("Jane", "Doe")
+            |  val res = u.to<String>("testName")
+            |  println(res)
             |}
             |""".trimMargin()
         )

@@ -76,13 +76,12 @@ class GradlePluginTest {
             |import community.flock.kmapper.Flock
             |
             |@Flock
-            |class User {
-            |  override fun toString(): String = "User"
-            |}
+            |data class User(val firstName: String, val lastName: String)
             |
             |fun main() {
-            |  val u = User()
-            |  println(u.to<String>("testName"))
+            |  val u = User("Jane", "Doe")
+            |  val res = u.to<String>("testName")
+            |  println(res)
             |}
             |""".trimMargin()
         )
