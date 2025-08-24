@@ -1,13 +1,15 @@
 package community.flock.kmapper.compiler
 
 import org.jetbrains.kotlin.fir.FirSession
-import org.jetbrains.kotlin.fir.extensions.*
+import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
+import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
+import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
+import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.plugin.createMemberFunction
 import org.jetbrains.kotlin.fir.resolve.defaultType
-import org.jetbrains.kotlin.fir.symbols.impl.*
-import org.jetbrains.kotlin.fir.types.constructStarProjectedType
-import org.jetbrains.kotlin.fir.types.ConeTypeParameterType
+import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -18,10 +20,10 @@ import org.jetbrains.kotlin.name.Name
 class FlockFirDeclarationGenerationExtension(
     session: FirSession,
 ) : FirDeclarationGenerationExtension(session) {
-    
+
     companion object {
         val FLOCK_FUN_NAME = Name.identifier("to")
-        
+
         private val FLOCK_PREDICATE = DeclarationPredicate.create {
             annotated(FqName("community.flock.kmapper.Flock"))
         }
@@ -71,8 +73,18 @@ class FlockFirDeclarationGenerationExtension(
         ) {
             // Add type parameter T
             typeParameter(Name.identifier("T"))
-            // Add name parameter of type String
-            valueParameter(Name.identifier("name"), session.builtinTypes.stringType.coneType)
+            // Add name parameter of type Pair<String, Any>
+            run {
+                val pairType = org.jetbrains.kotlin.fir.types.impl.ConeClassLikeTypeImpl(
+                    org.jetbrains.kotlin.fir.symbols.impl.ConeClassLikeLookupTagImpl(org.jetbrains.kotlin.name.ClassId.topLevel(FqName("kotlin.Pair"))),
+                    arrayOf(
+                        session.builtinTypes.stringType.coneType,
+                        session.builtinTypes.anyType.coneType
+                    ),
+                    false
+                )
+                valueParameter(Name.identifier("name"), pairType)
+            }
         }
 
         return listOf(flockFunction.symbol)

@@ -80,7 +80,7 @@ class GradlePluginTest {
             |
             |fun main() {
             |  val u = User("Jane", "Doe")
-            |  val res = u.to<String>("testName")
+            |  val res = u.to<String>(Pair("testName", 1))
             |  println(res)
             |}
             |""".trimMargin()
