@@ -53,7 +53,7 @@ object Diagnostics : KtDiagnosticsContainer() {
         positioningStrategy = SourceElementPositioningStrategies.ANNOTATION_USE_SITE,
     )
 
-    val MissingConstructorParameters by error0(
+    val MissingConstructorParameters by error1<String>(
         positioningStrategy = SourceElementPositioningStrategies.DEFAULT,
     )
 
@@ -138,9 +138,10 @@ private object DiagnosticRendererFactory : BaseDiagnosticRendererFactory() {
             factory = Diagnostics.SkippedPropertyWithCustomAnnotation,
             message = "The @Skip annotation is experimental and its behavior may change; use with caution",
         )
-        it.put(
+        it.put<String>(
             factory = Diagnostics.MissingConstructorParameters,
-            message = "Missing constructor parameters in KMapper mapping. Check the INFO log for parameter details.",
+            message = "Missing constructor parameters in mapping: {0}.",
+            rendererA = null
         )
     }
 }

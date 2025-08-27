@@ -5,6 +5,6 @@ import org.jetbrains.kotlin.GeneratedDeclarationKey
 /**
  * Key for Flock-generated declarations
  */
-object FlockKey : GeneratedDeclarationKey() {
-    override fun toString(): String = "FlockKey"
+object MapperKey : GeneratedDeclarationKey() {
+    override fun toString(): String = "MapperKey"
 }

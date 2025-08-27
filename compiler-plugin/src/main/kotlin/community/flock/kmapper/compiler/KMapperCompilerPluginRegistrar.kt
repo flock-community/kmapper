@@ -1,7 +1,6 @@
 package community.flock.kmapper.compiler
 
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
-import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
@@ -19,9 +18,9 @@ class KMapperCompilerPluginRegistrar : CompilerPluginRegistrar() {
         collector.report(CompilerMessageSeverity.INFO, "[KMapperPlugin] Compiler plugin registrar loaded")
 
         // Register FIR extension using proper K2 adapter
-        FirExtensionRegistrarAdapter.registerExtension(FlockFirExtensionRegistrar(collector))
+        FirExtensionRegistrarAdapter.registerExtension(MapperFirExtensionRegistrar(collector))
         
         // Register IR extension for code generation
-        IrGenerationExtension.registerExtension(FlockExtension(collector))
+        IrGenerationExtension.registerExtension(MapperExtension(collector))
     }
 }

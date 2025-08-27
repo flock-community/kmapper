@@ -9,7 +9,7 @@ annotation class KMapper
 fun generated(): Nothing = error("Mapper was not generated")
 
 @KMapper
-inline fun <reified TO> Any.mapper(mapper: (Mapper<TO>.() -> Unit)) = {}
+inline fun <reified TO> Any.mapper(mapper: (Mapper<TO>.() -> Unit)):TO = generated()
 
 class Mapper<TO>() {
     val to: TO get() = error("For context")

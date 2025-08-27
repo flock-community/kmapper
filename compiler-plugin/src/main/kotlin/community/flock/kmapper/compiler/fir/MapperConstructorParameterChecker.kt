@@ -125,16 +125,17 @@ class ConstructorParameterChecker(val collector: MessageCollector, private val s
 
 
         val diff = constructor.filterNot { c -> mappings.any { m -> m.name == c.name && m.type == c.type }}
+        val missingParameterNames = diff.joinToString(", ") { it.name.asString() }
 
         // Report error if there are missing constructor parameters
         if (diff.isNotEmpty()) {
             reporter.reportOn(
                 source = typeArgument.source,
                 factory = Diagnostics.MissingConstructorParameters,
+                a = missingParameterNames
             )
         }
 
-        val missingParameterNames = diff.joinToString(", ") { it.name.asString() }
         val builder = StringBuilder()
             .apply {
                 appendLine("Missing constructor parameters: $missingParameterNames")
