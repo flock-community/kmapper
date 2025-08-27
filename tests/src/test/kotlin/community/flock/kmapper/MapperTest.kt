@@ -10,13 +10,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.stream.Collectors
 
-class CompilerPluginRegistarTest {
+class MapperTest {
 
     @Test
     fun compileProjectWithPlugin_emitsMarker(@TempDir tempDir: Path) {
-        val pluginJar = locatePluginJar()
-        require(pluginJar.isFile) { "Plugin jar not found at: $pluginJar" }
-
         // Write settings.gradle.kts
         Files.writeString(
             tempDir.resolve("settings.gradle.kts"),
@@ -25,10 +22,8 @@ class CompilerPluginRegistarTest {
             |  repositories {
             |    gradlePluginPortal()
             |    mavenCentral()
+            |    mavenLocal()
             |  }
-            |}
-            |plugins {
-            |  id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
             |}
             |rootProject.name = "sample"
             |""".trimMargin()
@@ -39,23 +34,24 @@ class CompilerPluginRegistarTest {
             tempDir.resolve("build.gradle.kts"),
             """
             |plugins {
+            |    id("community.flock.kmapper") version "0.0.0-SNAPSHOT"
             |    kotlin("jvm") version "2.2.20-RC"
             |    application
             |}
-            |repositories { mavenCentral() }
+            |repositories { 
+            |  mavenCentral()
+            |  mavenLocal()
+            |}
             |dependencies {
             |    implementation(kotlin("stdlib"))
             |}
             |kotlin {
             |  jvmToolchain(21)
-            |  compilerOptions {
-            |    freeCompilerArgs.add("-Xplugin=${'$'}{pluginJarPath}")
-            |  }
             |}
             |application {
             |  mainClass.set("sample.AppKt")
             |}
-            |""".trimMargin().replace("${'$'}{pluginJarPath}", pluginJar.absolutePath.replace("\\", "\\\\"))
+            |""".trimMargin()
         )
 
         // Write sample Kotlin sources
@@ -77,16 +73,22 @@ class CompilerPluginRegistarTest {
             """
             |package sample
             |
-            |import community.flock.kmapper.Flock
+            |import community.flock.kmapper.mapper
             |
-            |@Flock
             |data class User(val firstName: String, val lastName: String)
             |
+            |data class Id(val id: Int)
+            |data class UserDto(val id: Id, val name: String, val age: Int)
             |fun main() {
-            |  val u = User("Jane", "Doe")
-            |  val res = u.to<String>(Pair("testName", "Test"))
-            |  println(res)
+            |  val user = User("John", "Doe")
+            |  val userDto = user.mapper<UserDto> {
+            |    to::name map "${'$'}{user.firstName} ${'$'}{user.lastName}"
+            |    to::age map 3
+            |    to::id map Id(1)
+            |  }
             |}
+            |
+            |
             |""".trimMargin()
         )
 
@@ -98,19 +100,12 @@ class CompilerPluginRegistarTest {
 
         val output = result.output
 
+        print(output)
+
         assertTrue(
             output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
             "Expected compiler plugin marker not found in output"
         )
     }
 
-    private fun locatePluginJar(): File {
-        val libsDir = File("../compiler-plugin/build/libs").absoluteFile.normalize()
-        if (!libsDir.isDirectory) return File("nonexistent")
-        val jar = Files.list(libsDir.toPath())
-            .filter { it.toString().endsWith(".jar") }
-            .collect(Collectors.toList())
-            .firstOrNull()
-        return jar?.toFile() ?: File("nonexistent")
-    }
 }

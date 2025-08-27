@@ -81,10 +81,14 @@ class CompilerPluginFunctionalTest {
             |
             |@Flock
             |data class User(val firstName: String, val lastName: String)
+            |data class UserDto(var name: String)
             |
             |fun main() {
             |  val u = User("Jane", "Doe")
-            |  val res = u.to<String>(Pair("testName", 1))
+            |  val res = u.to<UserDto>(
+            |    "testName1" to "testValue1",
+            |    "testName2" to "testValue2"
+            |  )
             |  println(res)
             |}
             |""".trimMargin()
@@ -98,8 +102,14 @@ class CompilerPluginFunctionalTest {
 
         val output = result.output
 
+        println(output)
+
         assertTrue(
             output.contains("FLOCK User"),
+            "Expected println output prefixed with 'FLOCK' not found"
+        )
+        assertTrue(
+            output.contains("Blalalal"),
             "Expected println output prefixed with 'FLOCK' not found"
         )
     }

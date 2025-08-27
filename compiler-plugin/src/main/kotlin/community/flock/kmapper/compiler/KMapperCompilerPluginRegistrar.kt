@@ -19,9 +19,9 @@ class KMapperCompilerPluginRegistrar : CompilerPluginRegistrar() {
         collector.report(CompilerMessageSeverity.INFO, "[KMapperPlugin] Compiler plugin registrar loaded")
 
         // Register FIR extension using proper K2 adapter
-        FirExtensionRegistrarAdapter.registerExtension(FlockFirExtensionRegistrar())
+        FirExtensionRegistrarAdapter.registerExtension(FlockFirExtensionRegistrar(collector))
         
         // Register IR extension for code generation
-        IrGenerationExtension.registerExtension(FlockExtension())
+        IrGenerationExtension.registerExtension(FlockExtension(collector))
     }
 }

@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     kotlin("jvm") version "2.2.20-RC"
     id("maven-publish")
@@ -18,6 +20,7 @@ dependencies {
 
 kotlin {
     jvmToolchain(17)
+    compilerOptions.freeCompilerArgs.add("-Xcontext-parameters")
 }
 
 val javadocJar by tasks.registering(Jar::class) {
@@ -69,4 +72,8 @@ signing {
         useInMemoryPgpKeys(signingKey, signingPassword)
         sign(publishing.publications["maven"])
     }
+}
+
+tasks.withType<KotlinCompile>().configureEach {
+    compilerOptions.freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI")
 }

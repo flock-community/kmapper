@@ -77,11 +77,12 @@ class GradlePluginTest {
             |
             |@Flock
             |data class User(val firstName: String, val lastName: String)
+            |data class UserDto(var name: String)
             |
             |fun main() {
             |  val u = User("Jane", "Doe")
-            |  val res = u.to<String>(Pair("testName", 1))
-            |  println(res)
+            |  val res = u.to<UserDto>(Pair("testName", "Test"))
+            |  println(res) 
             |}
             |""".trimMargin()
         )
@@ -93,6 +94,8 @@ class GradlePluginTest {
             .build()
 
         val output = result.output
+
+        print(output)
 
         assertTrue(
             output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
