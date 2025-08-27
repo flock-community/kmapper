@@ -48,7 +48,6 @@ class SecondIrVisitor(
             }
             val parentClass = declaration.parent as IrClass
             if (parentClass.hasAnnotation(FLOCK_ANNOTATION_FQN)) {
-                println("[FlockIrVisitor] Generating body for to() method in ${parentClass.name}")
                 generateFlockMethodBody(declaration, parentClass)
             }
         }

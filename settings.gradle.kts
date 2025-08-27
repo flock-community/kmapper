@@ -22,4 +22,4 @@ plugins {
 
 rootProject.name = "kmapper"
 
-include(":compiler-plugin", "compiler-annotations", ":gradle-plugin", ":tests")
+include(":compiler-plugin", "compiler-runtime", ":gradle-plugin", ":tests")

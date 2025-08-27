@@ -27,5 +27,5 @@ tasks.test {
     dependsOn(":compiler-plugin:jar")
     dependsOn(":gradle-plugin:publishToMavenLocal")
     dependsOn(":compiler-plugin:publishToMavenLocal")
-    dependsOn(":compiler-annotations:publishToMavenLocal")
+    dependsOn(":compiler-runtime:publishToMavenLocal")
 }
