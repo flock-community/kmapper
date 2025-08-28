@@ -42,7 +42,7 @@ jobs:
         sed -i 's/version = ".*"/version = "${{ github.event.release.tag_name }}"/' build.gradle.kts
         
     - name: Build and test
-      run: ./gradlew build -x test
+      run: ./gradlew build
       
     - name: Publish to Maven Central
       env:
@@ -50,4 +50,4 @@ jobs:
         SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
         GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-      run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository -x test
+      run: ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
