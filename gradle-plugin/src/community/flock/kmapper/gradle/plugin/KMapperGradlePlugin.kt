@@ -10,9 +10,9 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 
 @Suppress("unused") // Used via reflection.
-class FlockGradlePlugin : KotlinCompilerPluginSupportPlugin {
+class KMapperGradlePlugin : KotlinCompilerPluginSupportPlugin {
     override fun apply(target: Project) {
-        target.extensions.create("flockPlugin", FlockGradleExtension::class.java)
+        target.extensions.create("flockPlugin", KMapperGradleExtension::class.java)
     }
 
     override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean = true
@@ -36,7 +36,7 @@ class FlockGradlePlugin : KotlinCompilerPluginSupportPlugin {
         }
 
         return project.provider {
-            val extension = project.extensions.getByType(FlockGradleExtension::class.java)
+            val extension = project.extensions.getByType(KMapperGradleExtension::class.java)
 
             emptyList()
         }

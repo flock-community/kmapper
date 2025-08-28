@@ -52,11 +52,12 @@ buildConfig {
 
 gradlePlugin {
     plugins {
-        create("FlockPlugin") {
+        create("KMapperPlugin") {
             id = rootProject.group.toString()
-            displayName = "FlockPlugin"
-            description = "FlockPlugin"
-            implementationClass = "community.flock.kmapper.gradle.plugin.FlockGradlePlugin"
+            displayName = "KMapper Gradle Plugin"
+            description = "Gradle plugin for KMapper - a Kotlin object mapping"
+            tags.set(listOf("kotlin", "mapping", "codegen"))
+            implementationClass = "community.flock.kmapper.gradle.plugin.KMapperGradlePlugin"
         }
     }
 }
