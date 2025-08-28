@@ -8,6 +8,7 @@ plugins {
 }
 
 version = rootProject.version
+group = rootProject.group
 
 sourceSets {
     main {
