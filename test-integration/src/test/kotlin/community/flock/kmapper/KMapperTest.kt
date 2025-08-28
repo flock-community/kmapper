@@ -33,7 +33,7 @@ class KMapperTest {
                 |
                 """.trimMargin()
             }
-            .compile { output ->
+            .compileSuccess { output ->
                 assertTrue(
                     output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
                     "Expected compiler plugin marker not found in output"
@@ -67,7 +67,7 @@ class KMapperTest {
                 |
                 """.trimMargin()
             }
-            .compile { output ->
+            .compileFail { output ->
                 assertTrue(
                     output.contains("App.kt:11:29 Missing constructor parameters in mapping: age."),
                     "Expected compiler Missing constructor parameters"

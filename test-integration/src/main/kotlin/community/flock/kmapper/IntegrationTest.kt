@@ -1,6 +1,5 @@
 package community.flock.kmapper
 
-import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import java.nio.file.Files
 
@@ -20,33 +19,38 @@ class IntegrationTest(options: Options) {
         buildGradle,
     )
 
-    fun file(file: String, content: () -> String): IntegrationTest {
-        files.add(File("src/main/kotlin", file, content()))
-        return this
-    }
-
-    fun compile(assert: (String) -> Unit): IntegrationTest {
+    private fun compile(): GradleRunner {
         val tempDir = Files.createTempDirectory("")
-        files.forEach {file ->
+        files.forEach { file ->
             val srcDir = tempDir
                 .resolve(file.path)
-                .apply (Files::createDirectories)
+                .apply(Files::createDirectories)
             print("write file: $srcDir ${file.path}")
             Files.writeString(srcDir.resolve(file.name), file.content)
         }
 
-        val result: BuildResult = GradleRunner.create()
+        return GradleRunner.create()
             .withProjectDir(tempDir.toFile())
             .withArguments("run", "--info")
             .forwardOutput()
-            .run()
 
-        val output = result.output
-
-        assert(output)
-
-        return this
     }
+
+    fun file(file: String, content: () -> String): IntegrationTest = files
+        .add(File("src/main/kotlin", file, content()))
+        .let { this }
+
+    fun compileSuccess(assert: (String) -> Unit): IntegrationTest = this
+        .compile()
+        .build()
+        .apply { assert(output) }
+        .let { this }
+
+    fun compileFail(assert: (String) -> Unit): IntegrationTest = this
+        .compile()
+        .buildAndFail()
+        .apply { assert(output) }
+        .let { this }
 
     companion object {
         val settingsGradle = File(

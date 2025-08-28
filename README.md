@@ -1,16 +1,16 @@
 # KMapper
 
-A Kotlin compiler plugin that automatically generates mapping methods for annotated classes.
+A Kotlin compiler plugin that automatically generates mapping methods between data classes using a fluent DSL.
 
 ## Overview
 
-KMapper is a Kotlin compiler plugin that provides code generation capabilities through annotations. When you annotate a class with `@Flock`, the plugin automatically generates a `flock()` method that returns a formatted string representation of the class.
+KMapper is a Kotlin compiler plugin that provides code generation capabilities for mapping between data classes. It uses a fluent DSL syntax with the `mapper` extension function to transform objects from one type to another, with compile-time validation to ensure all required constructor parameters are mapped.
 
 ## Features
 
 - **Kotlin 2.0+ Support**: Built with K2 compiler support (Kotlin 2.2.20-RC)
-- **Annotation-Driven**: Simple `@Flock` annotation to trigger code generation
-- **Zero Runtime Dependencies**: Pure compile-time code generation
+- **Fluent DSL**: Intuitive mapping syntax with `to::property map value`
+- **Compile-time Validation**: Ensures all required constructor parameters are mapped
 - **IR-Based Generation**: Uses Kotlin's IR (Intermediate Representation) for robust code generation
 
 ## Requirements
@@ -28,12 +28,7 @@ Add the plugin to your project's `build.gradle.kts`:
 ```kotlin
 plugins {
     kotlin("jvm") version "2.2.20-RC"
-}
-
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.add("-Xplugin=path/to/kmapper-plugin.jar")
-    }
+    id("community.flock.kmapper") version "2.2.20-0.0.0-SNAPSHOT"
 }
 ```
 
@@ -41,112 +36,32 @@ kotlin {
 
 ### Basic Example
 
-1. Define the `@Flock` annotation in your project:
+1. Import the mapper function:
 
 ```kotlin
-package community.flock.kmapper
-
-@Target(AnnotationTarget.CLASS)
-annotation class Flock
+import community.flock.kmapper.mapper
 ```
 
-2. Annotate your classes:
+2. Define your data classes:
 
 ```kotlin
-import community.flock.kmapper.Flock
-
-@Flock
-class User {
-    override fun toString(): String = "User"
-}
+data class User(val firstName: String, val lastName: String)
+data class UserDto(val name: String, val age: Int)
 ```
 
-3. Use the generated `flock()` method:
+3. Use the mapper DSL to transform objects:
 
 ```kotlin
 fun main() {
-    val user = User()
-    println(user.flock()) // Output: "FLOCK User"
+    val user = User("John", "Doe")
+    val userDto = user.mapper<UserDto> {
+        to::age map 25
+        to::name map "${user.firstName} ${user.lastName}"
+    }
+    println(userDto) // Output: UserDto(name=John Doe, age=25)
 }
 ```
 
 ### Generated Code
 
-For a class annotated with `@Flock`, the plugin automatically generates:
-
-```kotlin
-fun flock(): String {
-    return "FLOCK ${ClassName}"
-}
-```
-
-## Project Structure
-
-```
-kmapper/
-├── plugin/                           # Compiler plugin implementation
-│   └── src/main/kotlin/community/flock/kmapper/compiler/
-│       ├── KMapperCompilerPluginRegistrar.kt    # Main plugin registrar
-│       ├── FlockExtension.kt                    # IR generation extension
-│       ├── FlockIrVisitor.kt                    # IR visitor for transformations
-│       ├── FlockFirExtensionRegistrar.kt        # FIR extension registrar
-│       ├── FlockFirDeclarationGenerationExtension.kt # FIR declaration generation
-│       └── keys.kt                              # Plugin configuration keys
-├── tests/                            # Test suite
-│   └── src/test/kotlin/community/flock/kmapper/
-│       ├── CompilerPluginFunctionalTest.kt     # Functional tests
-│       └── CompilerPluginRegistarTest.kt       # Unit tests
-└── README.md                         # This file
-```
-
-## Development
-
-### Building the Plugin
-
-```bash
-./gradlew build
-```
-
-### Running Tests
-
-```bash
-./gradlew test
-```
-
-The test suite includes:
-- **Functional Tests**: End-to-end compilation and execution tests
-- **Unit Tests**: Plugin registration and configuration tests
-
-### Architecture
-
-KMapper uses Kotlin's compiler plugin architecture with two main components:
-
-1. **FIR Extensions**: Handle frontend processing and declaration generation
-2. **IR Extensions**: Perform the actual code generation in the backend
-
-The plugin registers both extensions to support the K2 compiler frontend while maintaining compatibility.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Run the test suite
-6. Submit a pull request
-
-## Technical Details
-
-- **Group**: `community.flock`
-- **Version**: `1.0-SNAPSHOT`
-- **Kotlin Version**: `2.2.20-RC`
-- **JVM Toolchain**: 21
-- **Plugin API**: Uses Kotlin's `@OptIn(ExperimentalCompilerApi::class)`
-
-## License
-
-This project is part of the community.flock ecosystem.
-
-## Support
-
-For issues and questions, please use the GitHub issue tracker.
+The plugin automatically generates the mapping implementation at compile time, replacing the `mapper` function call with the actual object construction code.
