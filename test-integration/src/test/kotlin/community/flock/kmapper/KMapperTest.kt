@@ -25,9 +25,10 @@ class KMapperTest {
                 |fun main() {
                 |  val user = User("John", "Doe")
                 |  val userDto = user.mapper<UserDto> {
-                |    to::name map "${user.firstName} ${user.lastName}"
                 |    to::age map 3
+                |    to::name map "${user.firstName} ${user.lastName}"
                 |  }
+                |  println(userDto)
                 |}
                 |
                 """.trimMargin()
@@ -36,6 +37,10 @@ class KMapperTest {
                 assertTrue(
                     output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
                     "Expected compiler plugin marker not found in output"
+                )
+                assertTrue(
+                    output.contains("UserDto(name=John Doe, age=3)"),
+                    "Expected UserDto(name=John Doe, age=3) in output"
                 )
             }
     }
