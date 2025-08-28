@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
  */
 class MapperExtension(val collector: MessageCollector) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        println("[DEBUG] FlockExtension IR generate called")
         moduleFragment.transformChildrenVoid(MapperIrVisitor(pluginContext, collector))
     }
 }

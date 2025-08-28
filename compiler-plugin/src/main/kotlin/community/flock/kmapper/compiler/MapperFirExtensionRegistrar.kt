@@ -6,8 +6,7 @@ import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 
 /**
- * FIR extension registrar for the Flock plugin
- * Handles frontend analysis and validation of @Flock annotations
+ * FIR extension registrar for the KMapper plugin
  */
 class MapperFirExtensionRegistrar(val collector: MessageCollector) : FirExtensionRegistrar() {
     override fun ExtensionRegistrarContext.configurePlugin() {

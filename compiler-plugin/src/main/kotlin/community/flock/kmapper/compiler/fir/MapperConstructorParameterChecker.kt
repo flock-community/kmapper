@@ -82,8 +82,6 @@ class ConstructorParameterChecker(val collector: MessageCollector, private val s
     override fun check(expression: FirCall) {
 
         val function: FirFunctionCall = expression as? FirFunctionCall ?: return
-
-
         val typeArgument = expression.typeArguments.firstOrNull() as? FirTypeProjectionWithVariance ?: return
         val resolvedTypeArgument = typeArgument.typeRef.coneTypeOrNull ?: return
         val classSymbol = resolvedTypeArgument.toRegularClassSymbol(session) ?: return

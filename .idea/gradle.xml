@@ -12,7 +12,7 @@
             <option value="$PROJECT_DIR$/compiler-plugin" />
             <option value="$PROJECT_DIR$/compiler-runtime" />
             <option value="$PROJECT_DIR$/gradle-plugin" />
-            <option value="$PROJECT_DIR$/tests" />
+            <option value="$PROJECT_DIR$/test-integration" />
           </set>
         </option>
       </GradleProjectSettings>
