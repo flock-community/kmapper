@@ -1,7 +1,7 @@
 package community.flock.kmapper.gradle.plugin
 
-import kmapper.BuildConfig
-import kmapper.BuildConfig.ANNOTATIONS_LIBRARY_COORDINATES
+import community.flock.kmapper.BuildConfig
+import community.flock.kmapper.BuildConfig.ANNOTATIONS_LIBRARY_COORDINATES
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
