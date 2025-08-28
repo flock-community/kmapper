@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "community.flock.kmapper"
-version = "0.0.0-SNAPSHOT"
+version = "2.2.20-RC-0.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()

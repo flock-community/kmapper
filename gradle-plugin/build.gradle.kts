@@ -103,3 +103,8 @@ signing {
         sign(publishing.publications)
     }
 }
+
+// Fix task dependencies between signing and publishing
+tasks.withType<PublishToMavenRepository>().configureEach {
+    dependsOn(tasks.withType<Sign>())
+}
