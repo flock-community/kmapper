@@ -64,7 +64,7 @@ class KMapperTest {
             }
             .compile { output ->
                 assertTrue(
-                    output.contains("Missing constructor parameters in mapping: age."),
+                    output.contains("App.kt:11:29 Missing constructor parameters in mapping: age."),
                     "Expected compiler Missing constructor parameters"
                 )
             }

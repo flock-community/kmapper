@@ -17,7 +17,6 @@ import org.jetbrains.kotlin.fir.declarations.constructors
 import org.jetbrains.kotlin.fir.declarations.hasAnnotation
 import org.jetbrains.kotlin.fir.expressions.FirAnonymousFunctionExpression
 import org.jetbrains.kotlin.fir.expressions.FirCall
-import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
 import org.jetbrains.kotlin.fir.expressions.arguments
 import org.jetbrains.kotlin.fir.expressions.toReference
@@ -32,47 +31,18 @@ import org.jetbrains.kotlin.fir.types.resolvedType
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.text
 
 
-internal class ConstructorParameterCheckerExtension(
-    collector: MessageCollector,
-    session: FirSession,
-) : FirAdditionalCheckersExtension(session) {
-    override val expressionCheckers: ExpressionCheckers =
-        object : ExpressionCheckers() {
-            override val callCheckers: Set<FirCallChecker> =
-                setOf(ConstructorParameterChecker(collector, session))
-        }
-}
 
-// The checker itself
+
 class ConstructorParameterChecker(val collector: MessageCollector, private val session: FirSession) :
     FirCallChecker(MppCheckerKind.Common) {
 
-    interface Ref {
-        val name: Name
-        val type: ConeKotlinType
-    }
 
-    data class Constructor(
-        override val name: Name,
-        override val type: ConeKotlinType,
-    ) : Ref {
-        override fun toString(): String {
-            return "Constructor(name=$name, type=$type)"
-        }
-    }
-
-    data class Mapping(
-        override val name: Name,
-        override val type: ConeKotlinType,
-        val value: FirExpression
-    ) : Ref {
-        override fun toString(): String {
-            return "Mapping(name=$name, type=$type, value=${value.source.text})"
-        }
-    }
+    data class Field(
+        val name: Name,
+        val type: ConeKotlinType,
+    )
 
     companion object {
         val kMapperAnnotation = FqName("community.flock.kmapper.KMapper")
@@ -81,48 +51,43 @@ class ConstructorParameterChecker(val collector: MessageCollector, private val s
     context(context: CheckerContext, reporter: DiagnosticReporter)
     override fun check(expression: FirCall) {
 
-        val function: FirFunctionCall = expression as? FirFunctionCall ?: return
+        val annotation = ClassId.topLevel(kMapperAnnotation)
+        val hasAnnotation = expression.toReference(session)
+            ?.toResolvedBaseSymbol()
+            ?.hasAnnotation(annotation, session) ?: false
+
+        // Return if the call is not a constructor call and does not have the @KMapper annotation
+        if (!hasAnnotation) return
+
+        val function = expression as? FirFunctionCall ?: return
         val typeArgument = expression.typeArguments.firstOrNull() as? FirTypeProjectionWithVariance ?: return
         val resolvedTypeArgument = typeArgument.typeRef.coneTypeOrNull ?: return
         val classSymbol = resolvedTypeArgument.toRegularClassSymbol(session) ?: return
         val primaryConstructor = classSymbol.constructors(session).firstOrNull() ?: return
-        val constructor = primaryConstructor.valueParameterSymbols.map {
-            Constructor(
-                name = it.name,
-                type = it.resolvedReturnType
+        val constructor = primaryConstructor.valueParameterSymbols.map { parameter ->
+            Field(
+                name = parameter.name,
+                type = parameter.resolvedReturnType
             )
         }
 
-        val anno = ClassId.topLevel(kMapperAnnotation)
-        val calleeReference = expression.toReference(session)
-
-        // Resolve to the callable symbol and get the declaration
-        val hasAnnotation = calleeReference?.toResolvedBaseSymbol()?.hasAnnotation(anno, session) ?: false
-
-        if (!hasAnnotation) return
-
         val arg = function.arguments.first() as? FirAnonymousFunctionExpression ?: return
-        val mappings = arg.anonymousFunction.body
-            ?.statements
-            ?.filterIsInstance<FirFunctionCall>()
-            ?.mapNotNull { call ->
-                call.extensionReceiver
-                    ?.toReference(session)
-                    ?.toResolvedPropertySymbol()
-                    ?.let { receiver ->
-                        val arg = call.arguments.first()
-                        Mapping(
-                            name = receiver.name,
-                            type = arg.resolvedType,
-                            value = arg
-                        )
-                    }
+        val statements = arg.anonymousFunction.body?.statements?.filterIsInstance<FirFunctionCall>() ?: return
+        val fields = statements.mapNotNull { call ->
+            call.extensionReceiver
+                ?.toReference(session)
+                ?.toResolvedPropertySymbol()
+                ?.let { receiver ->
+                    val arg = call.arguments.first()
+                    Field(
+                        name = receiver.name,
+                        type = arg.resolvedType,
+                    )
+                }
 
-            }
-            .orEmpty()
+        }
 
-
-        val diff = constructor.filterNot { c -> mappings.any { m -> m.name == c.name && m.type == c.type }}
+        val diff = constructor.filterNot { c -> fields.any { m -> m == c } }
         val missingParameterNames = diff.joinToString(", ") { it.name.asString() }
 
         // Report error if there are missing constructor parameters
@@ -134,17 +99,29 @@ class ConstructorParameterChecker(val collector: MessageCollector, private val s
             )
         }
 
-        val builder = StringBuilder()
+        // Add a diagnostic message to the report
+        StringBuilder()
             .apply {
                 appendLine("Missing constructor parameters: $missingParameterNames")
                 appendLine("constructor: ${constructor}")
-                appendLine("mapping: $mappings")
+                appendLine("mapping: $fields")
                 appendLine("diff: $diff")
                 appendLine(dumpFirCall(expression))
             }
+            .apply {
+                collector.report(CompilerMessageSeverity.INFO, toString())
+            }
+    }
 
-        collector.report(CompilerMessageSeverity.INFO, builder.toString())
-
+    internal class Extension(
+        collector: MessageCollector,
+        session: FirSession,
+    ) : FirAdditionalCheckersExtension(session) {
+        override val expressionCheckers: ExpressionCheckers =
+            object : ExpressionCheckers() {
+                override val callCheckers: Set<FirCallChecker> =
+                    setOf(ConstructorParameterChecker(collector, session))
+            }
     }
 }
 

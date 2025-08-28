@@ -7,7 +7,6 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
 import org.jetbrains.kotlin.ir.builders.irInt
-import org.jetbrains.kotlin.ir.builders.irNull
 import org.jetbrains.kotlin.ir.builders.irString
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -93,14 +92,12 @@ class MapperIrVisitor(
             )
         }
 
-        val arg = expression.arguments.getOrNull(1) as? IrFunctionExpression ?: error("No argument found")
+        val constructorArgument = expression.arguments.getOrNull(1) as? IrFunctionExpression ?: error("No argument found")
 
         collector.report(
             CompilerMessageSeverity.INFO,
-            arg.function.dump()
+            constructorArgument.function.dump()
         )
-
-
 
         return builder.irCallConstructor(constructor!!.symbol, listOf(targetType)).apply {
             arguments[0] = builder.irString("Hello")
