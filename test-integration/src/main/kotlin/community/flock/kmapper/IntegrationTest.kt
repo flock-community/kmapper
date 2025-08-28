@@ -64,7 +64,7 @@ class IntegrationTest(options: Options) {
             |    mavenLocal()
             |  }
             |}
-            |rootProject.name = "sample"
+            |rootProject.name = "kmapper"
             |
             """.trimMargin()
         )
@@ -74,7 +74,7 @@ class IntegrationTest(options: Options) {
             "build.gradle.kts",
             """
             |plugins {
-            |    id("community.flock.kmapper") version "0.0.0-SNAPSHOT"
+            |    id("community.flock.kmapper") version "2.2.20-0.0.0-SNAPSHOT"
             |    kotlin("jvm") version "2.2.20-RC"
             |    application
             |}
