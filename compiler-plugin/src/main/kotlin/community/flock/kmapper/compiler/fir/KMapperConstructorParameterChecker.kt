@@ -9,7 +9,6 @@ import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.analysis.checkers.expression.ExpressionCheckers
 import org.jetbrains.kotlin.fir.analysis.checkers.expression.FirCallChecker
 import org.jetbrains.kotlin.fir.analysis.extensions.FirAdditionalCheckersExtension
-import org.jetbrains.kotlin.fir.declarations.DirectDeclarationsAccess
 import org.jetbrains.kotlin.fir.declarations.constructors
 import org.jetbrains.kotlin.fir.declarations.hasAnnotation
 import org.jetbrains.kotlin.fir.expressions.FirAnonymousFunctionExpression
@@ -20,9 +19,6 @@ import org.jetbrains.kotlin.fir.expressions.toReference
 import org.jetbrains.kotlin.fir.references.toResolvedBaseSymbol
 import org.jetbrains.kotlin.fir.references.toResolvedPropertySymbol
 import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
-import org.jetbrains.kotlin.fir.resolve.toSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirTypeProjectionWithVariance
 import org.jetbrains.kotlin.fir.types.coneTypeOrNull
@@ -48,7 +44,6 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
         val kMapperAnnotation = FqName("community.flock.kmapper.KMapper")
     }
 
-    @OptIn(DirectDeclarationsAccess::class)
     context(context: CheckerContext, reporter: DiagnosticReporter)
     override fun check(expression: FirCall) {
 
@@ -87,7 +82,7 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
                                 Field(
                                     name = receiver.name,
                                     type = arg.resolvedType,
-                                    fields = resolveFields(arg.resolvedType)
+                                    fields = arg.resolvedType.resolveFields()
                                 )
                             }
 
@@ -132,17 +127,21 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
             Field(
                 name = parameter.name,
                 type = parameter.resolvedReturnType,
-                fields = resolveFields(parameter.resolvedReturnType)
+                fields = parameter.resolvedReturnType.resolveFields()
             )
         }
     }
 
-    @OptIn(DirectDeclarationsAccess::class)
-    private fun resolveFields(type: ConeKotlinType): List<Field> {
-        val classSymbol = type.toSymbol(session) as? FirRegularClassSymbol
-        return classSymbol?.declarationSymbols?.filterIsInstance<FirPropertySymbol>().orEmpty().map {
-            Field(it.name, it.resolvedReturnTypeRef.coneType, fields = resolveFields(it.resolvedReturnTypeRef.coneType))
-        }
+    private fun ConeKotlinType.resolveFields(): List<Field> {
+        val classSymbol = toRegularClassSymbol(session)
+        val primaryConstructor = classSymbol?.constructors(session)?.firstOrNull()
+        return primaryConstructor?.valueParameterSymbols?.map { parameter ->
+            Field(
+                name = parameter.name,
+                type = parameter.resolvedReturnType,
+                fields = parameter.resolvedReturnType.resolveFields()
+            )
+        }.orEmpty()
     }
 
     internal class Extension(
