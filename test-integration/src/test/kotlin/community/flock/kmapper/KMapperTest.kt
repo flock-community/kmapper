@@ -157,7 +157,7 @@ class KMapperTest {
 
 
     @Test
-    fun shouldCompileError_missingParameterAge() {
+    fun shouldFail_missingParameterAge() {
         IntegrationTest(options)
             .file("App.kt") {
                 $$"""
@@ -254,6 +254,39 @@ class KMapperTest {
                 assertTrue(
                     output.contains("UserDto(id=1, name=John Doe, age=1)"),
                     "Expected UserDto(id=1, name=John Doe, age=1) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_defaultField() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class User(val id: Int, val name: String, val age: Int = 99)
+                |
+                |data class UserDto(val id: Int, val name: String, val age: Int)
+                |
+                |fun main() {
+                |  val user = User(id=1, name="John Doe")
+                |  val res:UserDto = user.mapper()
+                |  println(res)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
+                    "Expected compiler plugin marker not found in output"
+                )
+                assertTrue(
+                    output.contains("UserDto(id=1, name=John Doe, age=99)"),
+                    "Expected UserDto(id=1, name=John Doe, age=99) in output"
                 )
             }
     }

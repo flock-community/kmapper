@@ -80,4 +80,4 @@ To enable it, do the following:
 
 - Enable K2 Mode for the Kotlin IntelliJ plugin.
 - Open the Registry
-Set the kotlin.k2.only.bundled.compiler.plugins.enabled entry to false.
+- Set the kotlin.k2.only.bundled.compiler.plugins.enabled entry to false.
