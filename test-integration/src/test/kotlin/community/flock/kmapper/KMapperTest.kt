@@ -132,7 +132,7 @@ class KMapperTest {
                 |data class StreetCity(val street: String, val city: String)
                 |
                 |data class PersonDto(val name: String, val age: Int, val address: AddressDto)
-                |data class AddressDto(val streetCity: StreetCity, val zipCode: String)
+                |data class AddressDto(val streetCity: StreetCityDto, val zipCode: String)
                 |data class StreetCityDto(val street: String, val city: String)
                 |
                 |fun main() {
@@ -151,7 +151,7 @@ class KMapperTest {
                 """.trimMargin()
             }
             .compileSuccess { output ->
-                assertTrue(output.contains("PersonDto(name=John Doe, age=99, address=AddressDto(streetCity=StreetCity(street=Main Street, city=Hamburg), zipCode=22049))"))
+                assertTrue(output.contains("PersonDto(name=John Doe, age=99, address=AddressDto(streetCity=StreetCityDto(street=Main Street, city=Hamburg), zipCode=22049))"))
             }
     }
 
