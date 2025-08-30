@@ -73,7 +73,6 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
             ?.extractFields()
             ?: return
 
-
         val mapping = function.arguments.firstOrNull().let { it as? FirAnonymousFunctionExpression }
             ?.let { arg ->
                 arg.anonymousFunction.body

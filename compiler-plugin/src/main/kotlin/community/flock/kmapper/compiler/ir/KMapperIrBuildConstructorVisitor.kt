@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.ir.types.isPrimitiveType
 import org.jetbrains.kotlin.ir.types.isString
 import org.jetbrains.kotlin.ir.types.makeNotNull
 import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
@@ -77,7 +78,9 @@ class KMapperIrBuildConstructorVisitor(
                     ?.firstOrNull { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }
                     ?.symbol
                 if (expression.symbol == itParamSymbol) {
-                    return receiverArgument
+                    // Replace the lambda parameter reference with a fresh copy of the receiver expression
+                    // to avoid reusing the same IR node in multiple parents (IR validation error).
+                    return receiverArgument.deepCopyWithSymbols()
                 }
                 return e
             }

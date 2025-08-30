@@ -27,7 +27,6 @@ import java.io.File
 open class AbstractBoxTest : AbstractFirLightTreeBlackBoxCodegenTest() {
     override fun configure(builder: TestConfigurationBuilder) {
         super.configure(builder)
-
         with(builder) {
             configurePlugin()
             defaultDirectives {

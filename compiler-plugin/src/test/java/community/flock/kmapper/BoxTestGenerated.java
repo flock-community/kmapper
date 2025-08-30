@@ -20,7 +20,14 @@ import java.util.regex.Pattern;
 public class BoxTestGenerated extends AbstractBoxTest {
   @Test
   public void testAllFilesPresentInData() {
-    KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler-plugin/src/test/data"), Pattern.compile("^(.+)\\.kt$"), null, TargetBackend.JVM_IR, true);
+    KtTestUtil.assertAllTestsPresentByMetadataWithExcluded(
+        this.getClass(),
+        new File("compiler-plugin/src/test/data"),
+        Pattern.compile("^(.+)\\.kt$"),
+        null,
+        TargetBackend.JVM_IR,
+        true
+    );
   }
 
   @Test
