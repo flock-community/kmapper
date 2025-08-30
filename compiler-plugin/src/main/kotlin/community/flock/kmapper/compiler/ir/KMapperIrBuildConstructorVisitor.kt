@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.name.Name
 /**
  * IR visitor that generates method bodies for @KMapper annotated functions
  */
-class MapperIrVisitor(
+class KMapperIrBuildConstructorVisitor(
     private val context: IrPluginContext,
     private val collector: MessageCollector
 ) : IrElementTransformerVoid() {
@@ -56,21 +56,17 @@ class MapperIrVisitor(
     @OptIn(ObsoleteDescriptorBasedAPI::class, DeprecatedForRemovalCompilerApi::class)
     private fun createMapperImplementationFromCall(expression: IrCall): IrExpression {
         info("Creating mapper implementation from call")
-
-        info("expression: ${expression.dump()}")
-
         val builder = DeclarationIrBuilder(context, expression.symbol)
 
         val callArgument = expression.arguments.getOrNull(1) as? IrFunctionExpression
 
-        // Get the type arguments from the mapper call
         val typeArgument = expression.typeArguments[0] ?: error("Could not resolve target type for mapper")
         val typeArgumentClass = typeArgument.classOrNull?.owner ?: error("Could not resolve target class for mapper")
         val typeArgumentConstructor =
             typeArgumentClass.constructors.firstOrNull() ?: error("No primary constructor found for type argument")
 
         val toFields = typeArgumentConstructor.parameters.associate { it.name to it.type }
-        val fromFields = expression.typeArguments[1]?.extractFields().orEmpty()
+        val fromFields = expression.typeArguments[1]?.extractFields() ?: emptyMap()
 
         info("fromFields: $fromFields")
         info("toFields: $toFields")
@@ -85,11 +81,7 @@ class MapperIrVisitor(
                 name to expression
             }
 
-
         val receiverExpr = expression.arguments[0] ?: error("No extension receiver found for mapper call")
-
-        info("Receiver expression: ${receiverExpr.dump()}")
-
         val itParamSymbol = callArgument?.function?.parameters
             ?.firstOrNull { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }
             ?.symbol

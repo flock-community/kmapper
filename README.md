@@ -6,6 +6,8 @@ A Kotlin compiler plugin that automatically generates mapping methods between da
 
 KMapper is a Kotlin compiler plugin that provides code generation capabilities for mapping between data classes. It uses a fluent DSL syntax with the `mapper` extension function to transform objects from one type to another, with compile-time validation to ensure all required constructor parameters are mapped.
 
+![KMapper Demo](static/demo.gif)
+
 ## Features
 
 - **Kotlin 2.0+ Support**: Built with K2 compiler support (Kotlin 2.2.20-RC)
