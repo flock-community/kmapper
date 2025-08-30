@@ -7,21 +7,21 @@ import org.jetbrains.kotlin.cli.jvm.config.addJvmClasspathRoot
 import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.JvmTarget
 import org.jetbrains.kotlin.config.messageCollector
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.test.TestMetadata
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
 import org.jetbrains.kotlin.test.directives.CodegenTestDirectives.IGNORE_DEXING
 import org.jetbrains.kotlin.test.directives.ConfigurationDirectives.WITH_STDLIB
 import org.jetbrains.kotlin.test.directives.JvmEnvironmentConfigurationDirectives.FULL_JDK
+import org.jetbrains.kotlin.test.directives.JvmEnvironmentConfigurationDirectives.JVM_TARGET
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.runners.codegen.AbstractFirLightTreeBlackBoxCodegenTest
 import org.jetbrains.kotlin.test.services.EnvironmentConfigurator
 import org.jetbrains.kotlin.test.services.RuntimeClasspathProvider
 import org.jetbrains.kotlin.test.services.TestServices
 import java.io.File
-import kotlin.collections.buildSet
 
 @TestMetadata("compiler-plugin/src/test/data")
 open class AbstractBoxTest : AbstractFirLightTreeBlackBoxCodegenTest() {
@@ -34,13 +34,14 @@ open class AbstractBoxTest : AbstractFirLightTreeBlackBoxCodegenTest() {
                 +FULL_JDK
                 +WITH_STDLIB
                 +IGNORE_DEXING
+                JVM_TARGET with JvmTarget.JVM_17
             }
         }
     }
 }
 
 fun TestConfigurationBuilder.configurePlugin() {
-    useConfigurators( ::MetroExtensionRegistrarConfigurator, ::RuntimeEnvironmentConfigurator)
+    useConfigurators(::MetroExtensionRegistrarConfigurator, ::RuntimeEnvironmentConfigurator)
     useCustomRuntimeClasspathProviders(::RuntimeClassPathProvider)
 }
 

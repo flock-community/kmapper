@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     kotlin("jvm") version "2.2.20-RC"
     id("maven-publish")
@@ -10,6 +12,9 @@ version = rootProject.version
 
 kotlin {
     jvmToolchain(17)
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
 }
 
 val javadocJar by tasks.registering(Jar::class) {

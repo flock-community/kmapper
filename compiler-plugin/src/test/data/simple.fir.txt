@@ -1,51 +1,49 @@
 FILE: simple.kt
-    public final fun box(): R|kotlin/String| {
-        local final data class Person : R|kotlin/Any| {
-            public constructor(id: R|kotlin/Int|, firstName: R|kotlin/String|, lastName: R|kotlin/String|): R|<local>/Person| {
-                super<R|kotlin/Any|>()
-            }
-
-            public final val id: R|kotlin/Int| = R|<local>/id|
-                public get(): R|kotlin/Int|
-
-            public final val firstName: R|kotlin/String| = R|<local>/firstName|
-                public get(): R|kotlin/String|
-
-            public final val lastName: R|kotlin/String| = R|<local>/lastName|
-                public get(): R|kotlin/String|
-
-            public final operator fun component1(): R|kotlin/Int|
-
-            public final operator fun component2(): R|kotlin/String|
-
-            public final operator fun component3(): R|kotlin/String|
-
-            public final fun copy(id: R|kotlin/Int| = this@R|<local>/Person|.R|<local>/id|, firstName: R|kotlin/String| = this@R|<local>/Person|.R|<local>/firstName|, lastName: R|kotlin/String| = this@R|<local>/Person|.R|<local>/lastName|): R|<local>/Person|
-
+    public final data class Person : R|kotlin/Any| {
+        public constructor(id: R|kotlin/Int|, firstName: R|kotlin/String|, lastName: R|kotlin/String|): R|Person| {
+            super<R|kotlin/Any|>()
         }
 
-        local final data class PersonDto : R|kotlin/Any| {
-            public constructor(id: R|kotlin/Int|, name: R|kotlin/String|): R|<local>/PersonDto| {
-                super<R|kotlin/Any|>()
-            }
+        public final val id: R|kotlin/Int| = R|<local>/id|
+            public get(): R|kotlin/Int|
 
-            public final val id: R|kotlin/Int| = R|<local>/id|
-                public get(): R|kotlin/Int|
+        public final val firstName: R|kotlin/String| = R|<local>/firstName|
+            public get(): R|kotlin/String|
 
-            public final val name: R|kotlin/String| = R|<local>/name|
-                public get(): R|kotlin/String|
+        public final val lastName: R|kotlin/String| = R|<local>/lastName|
+            public get(): R|kotlin/String|
 
-            public final operator fun component1(): R|kotlin/Int|
+        public final operator fun component1(): R|kotlin/Int|
 
-            public final operator fun component2(): R|kotlin/String|
+        public final operator fun component2(): R|kotlin/String|
 
-            public final fun copy(id: R|kotlin/Int| = this@R|<local>/PersonDto|.R|<local>/id|, name: R|kotlin/String| = this@R|<local>/PersonDto|.R|<local>/name|): R|<local>/PersonDto|
+        public final operator fun component3(): R|kotlin/String|
 
+        public final fun copy(id: R|kotlin/Int| = this@R|/Person|.R|/Person.id|, firstName: R|kotlin/String| = this@R|/Person|.R|/Person.firstName|, lastName: R|kotlin/String| = this@R|/Person|.R|/Person.lastName|): R|Person|
+
+    }
+    public final data class PersonDto : R|kotlin/Any| {
+        public constructor(id: R|kotlin/Int|, name: R|kotlin/String|): R|PersonDto| {
+            super<R|kotlin/Any|>()
         }
 
-        lval person: R|<local>/Person| = R|<local>/Person.Person|(Int(1), String(John), String(Doe))
-        lval dto: R|<local>/PersonDto| = R|<local>/person|.<Unresolved name: mapper>#(<L> = mapper@fun <anonymous>(): <ERROR TYPE REF: Unresolved name: to> <inline=Unknown>  {
-            ^ <Unresolved name: to>#
+        public final val id: R|kotlin/Int| = R|<local>/id|
+            public get(): R|kotlin/Int|
+
+        public final val name: R|kotlin/String| = R|<local>/name|
+            public get(): R|kotlin/String|
+
+        public final operator fun component1(): R|kotlin/Int|
+
+        public final operator fun component2(): R|kotlin/String|
+
+        public final fun copy(id: R|kotlin/Int| = this@R|/PersonDto|.R|/PersonDto.id|, name: R|kotlin/String| = this@R|/PersonDto|.R|/PersonDto.name|): R|PersonDto|
+
+    }
+    public final fun box(): R|kotlin/Unit| {
+        lval person: R|Person| = R|/Person.Person|(Int(1), String(John), String(Doe))
+        lval dto: R|PersonDto| = R|<local>/person|.R|community/flock/kmapper/mapper|<R|PersonDto|, R|Person|>(<L> = mapper@fun R|community/flock/kmapper/Mapper<PersonDto, Person>|.<anonymous>(it: R|Person|): R|kotlin/Unit| <inline=NoInline>  {
+            (this@R|special/anonymous|, this@R|special/anonymous|.R|SubstitutionOverride<community/flock/kmapper/Mapper.to: R|PersonDto|>|::R|/PersonDto.name|).R|SubstitutionOverride<community/flock/kmapper/Mapper.map: R|kotlin/Unit|>|<R|kotlin/String|>(<strcat>(R|<local>/it|.R|/Person.firstName|, String( ), R|<local>/it|.R|/Person.lastName|))
         }
         )
     }
