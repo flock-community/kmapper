@@ -1,0 +1,4 @@
+FILE: simple.kt
+    public final fun box(): R|kotlin/String| {
+        ^box String(OK)
+    }

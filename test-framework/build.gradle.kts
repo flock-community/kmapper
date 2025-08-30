@@ -1,6 +1,5 @@
 plugins {
     kotlin("jvm")
-    id("com.gradleup.kctf").version("2.2.20-RC-0.0.0")
 }
 
 group = rootProject.group
@@ -19,7 +18,4 @@ sourceSets {
         java.setSrcDirs(listOf("test"))
         resources.setSrcDirs(listOf("testResources"))
     }
-}
-dependencies {
-    testImplementation("com.gradleup.kctf:kctf-runtime:2.2.20-RC-0.0.0")
 }

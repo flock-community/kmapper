@@ -4,6 +4,7 @@ plugins {
     kotlin("jvm") version "2.2.20-RC"
     id("maven-publish")
     id("org.jetbrains.dokka")
+    id("com.gradleup.kctf").version("2.2.20-RC-0.0.1-SNAPSHOT-1424b19d1cb13443bc979332d1104333061ca5fd")
     signing
 }
 
@@ -12,7 +13,10 @@ version = rootProject.version
 
 dependencies {
     compileOnly(kotlin("compiler-embeddable"))
+    testImplementation("com.gradleup.kctf:kctf-runtime:2.2.20-RC-0.0.1-SNAPSHOT-1424b19d1cb13443bc979332d1104333061ca5fd")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 }
+
 
 kotlin {
     jvmToolchain(17)
