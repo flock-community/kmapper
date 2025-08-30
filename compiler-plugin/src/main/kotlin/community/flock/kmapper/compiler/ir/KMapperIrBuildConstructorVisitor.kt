@@ -88,7 +88,7 @@ class KMapperIrBuildConstructorVisitor(
 
         val toShape = toTypeArgument.convertShape()
 
-        val constructorCall = builder.irCallConstructor(toShape.constructor.symbol, listOf(toTypeArgument)).apply {
+        val constructorCall = builder.irCallConstructor(toShape.constructor.symbol, emptyList()).apply {
             toShape.fields.onEachIndexed { index, field ->
                 val mappedValue = when {
                     field in fromTypeArgument.convertShape().fields -> builder.irGetPropertyByName(
@@ -145,7 +145,7 @@ class KMapperIrBuildConstructorVisitor(
         expression: IrExpression,
         toShape: Shape,
         fromShape: Shape
-    ): IrExpression = irCallConstructor(toShape.constructor.symbol, listOf(expression.type)).apply {
+    ): IrExpression = irCallConstructor(toShape.constructor.symbol, emptyList()).apply {
         toShape.fields.onEachIndexed { index, (name, type) ->
             val property = irGetPropertyByName(expression, name)
             if (type.makeNotNull().run { isPrimitiveType() || isString() }) {

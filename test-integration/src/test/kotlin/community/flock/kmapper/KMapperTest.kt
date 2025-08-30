@@ -185,4 +185,41 @@ class KMapperTest {
                 )
             }
     }
+
+    @Test
+    fun shouldCompile_valueClass() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |@JvmInline
+                |value class Id(val id: Int)
+                |data class User(val id: Id, val name: String, val age: Int)
+                |
+                |@JvmInline
+                |value class IdDto(val id: Int)
+                |data class UserDto(val id: IdDto, val name: String, val age: Int)
+                |
+                |fun main() {
+                |  val user = User(id=Id(1), name="John Doe", age=99)
+                |  val res:UserDto = user.mapper()
+                |  println(res)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
+                    "Expected compiler plugin marker not found in output"
+                )
+                assertTrue(
+                    output.contains("UserDto(id=IdDto(id=1), name=John Doe, age=99)"),
+                    "Expected UserDto(id=IdDto(id=1), name=John Doe, age=99) in output"
+                )
+            }
+    }
 }
