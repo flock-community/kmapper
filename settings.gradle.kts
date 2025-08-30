@@ -2,6 +2,8 @@ pluginManagement {
     repositories {
         mavenCentral()
         gradlePluginPortal()
+        maven(url="https://central.sonatype.com/repository/maven-snapshots/")
+        maven("https://storage.googleapis.com/gradleup/m2")
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
     }
 }
@@ -9,6 +11,8 @@ pluginManagement {
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
+        maven(url="https://central.sonatype.com/repository/maven-snapshots/")
+        maven("https://storage.googleapis.com/gradleup/m2")
         maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap")
     }
 }
@@ -23,5 +27,6 @@ include(
     ":compiler-plugin",
     "compiler-runtime",
     ":gradle-plugin",
+    ":test-framework",
     ":test-integration"
 )
