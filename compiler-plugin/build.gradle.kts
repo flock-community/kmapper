@@ -15,6 +15,7 @@ dependencies {
     compileOnly(kotlin("compiler-embeddable"))
     testImplementation("com.gradleup.kctf:kctf-runtime:2.2.20-RC-0.0.1-SNAPSHOT-1424b19d1cb13443bc979332d1104333061ca5fd")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation(project(":compiler-runtime"))
 }
 
 
@@ -76,4 +77,18 @@ signing {
 
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions.freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI")
+}
+
+val kMapperRuntimeClasspath: Configuration by configurations.creating { isTransitive = false }
+
+tasks.withType<Test> {
+    dependsOn(kMapperRuntimeClasspath)
+    inputs
+        .dir(layout.projectDirectory.dir("src/test/data"))
+        .withPropertyName("testData")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+
+    workingDir = rootDir
+    useJUnitPlatform()
+    systemProperty("runtime.classpath", kMapperRuntimeClasspath.asPath)
 }
