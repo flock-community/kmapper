@@ -32,6 +32,11 @@ plugins {
     kotlin("jvm") version "2.2.20-RC"
     id("community.flock.kmapper") version "2.2.20-0.0.0-SNAPSHOT"
 }
+
+repositories {
+    mavenCentral()
+    maven(url="https://oss.sonatype.org/content/repositories/snapshots/")
+}
 ```
 
 ## Usage
