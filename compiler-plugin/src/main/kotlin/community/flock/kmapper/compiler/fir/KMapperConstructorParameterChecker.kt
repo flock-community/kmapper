@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirTypeProjectionWithVariance
 import org.jetbrains.kotlin.fir.types.coneTypeOrNull
+import org.jetbrains.kotlin.fir.types.isPrimitive
 import org.jetbrains.kotlin.fir.types.resolvedType
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -41,8 +42,7 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
         val fields: List<Field>
     )
     infix fun Field.structuralCompare(other: Field): Boolean =
-        name == other.name &&
-        fields.zip(other.fields).all { (a, b) -> a structuralCompare b }
+        name == other.name && ((type.isPrimitive == other.type.isPrimitive && type == other.type) || other.fields.zip(fields).all { (a, b) -> a structuralCompare b })
 
     companion object {
         val kMapperAnnotation = FqName("community.flock.kmapper.KMapper")
@@ -72,7 +72,6 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
             ?.let { it as? FirTypeProjectionWithVariance }
             ?.extractFields()
             ?: return
-
 
         val mapping = function.arguments.firstOrNull().let { it as? FirAnonymousFunctionExpression }
             ?.let { arg ->
