@@ -18,15 +18,14 @@ class KMapperTest {
                 |
                 |import community.flock.kmapper.mapper
                 |
-                |data class User(val firstName: String, val lastName: String)
+                |data class User(val firstName: String, val lastName: String, val age: Int)
                 |data class Id(val id: Int)
                 |data class UserDto(val name: String, val age: Int)
                 |
                 |fun main() {
-                |  val user = User("John", "Doe")
-                |  val userDto = user.mapper<UserDto> {
-                |    to::age map 3
-                |    to::name map "${user.firstName} ${user.lastName}"
+                |  val user = User("John", "Doe", 99)
+                |  val userDto:UserDto = user.mapper {
+                |    to::name map "${it.firstName} ${user.lastName}"
                 |  }
                 |  println(userDto)
                 |}
@@ -39,8 +38,40 @@ class KMapperTest {
                     "Expected compiler plugin marker not found in output"
                 )
                 assertTrue(
-                    output.contains("UserDto(name=John Doe, age=3)"),
-                    "Expected UserDto(name=John Doe, age=3) in output"
+                    output.contains("UserDto(name=John Doe, age=99)"),
+                    "Expected UserDto(name=John Doe, age=99) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_identicalClasses() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class User(val id: Int, val name: String, val age: Int)
+                |data class UserDto(val id: Int, val name: String, val age: Int)
+                |
+                |fun main() {
+                |  val user = User(id=1, name="John Doe", age=99)
+                |  val res:UserDto = user.mapper()
+                |  println(res)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
+                    "Expected compiler plugin marker not found in output"
+                )
+                assertTrue(
+                    output.contains("UserDto(id=1, name=John Doe, age=99)"),
+                    "Expected UserDto(name=John Doe, age=99) in output"
                 )
             }
     }
@@ -60,7 +91,7 @@ class KMapperTest {
                 |
                 |fun main() {
                 |  val user = User("John", "Doe")
-                |  val userDto = user.mapper<UserDto> {
+                |  val userDto:UserDto = user.mapper {
                 |    to::name map "${user.firstName} ${user.lastName}"
                 |  }
                 |}
@@ -69,8 +100,8 @@ class KMapperTest {
             }
             .compileFail { output ->
                 assertTrue(
-                    output.contains("App.kt:11:29 Missing constructor parameters in mapping: age."),
-                    "Expected compiler Missing constructor parameters"
+                    output.contains("Missing mapping for: age."),
+                    "Missing mapping for: age."
                 )
             }
     }

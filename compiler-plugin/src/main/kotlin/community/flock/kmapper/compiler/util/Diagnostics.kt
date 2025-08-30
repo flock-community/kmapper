@@ -76,7 +76,7 @@ private object DiagnosticRendererFactory : BaseDiagnosticRendererFactory() {
     override val MAP by KtDiagnosticFactoryToRendererMap("Poko") {
         it.put(
             factory = Diagnostics.MissingConstructorParameters,
-            message = "Missing constructor parameters in mapping: {0}.",
+            message = "Missing mapping for: {0}.",
             rendererA = null
         )
     }

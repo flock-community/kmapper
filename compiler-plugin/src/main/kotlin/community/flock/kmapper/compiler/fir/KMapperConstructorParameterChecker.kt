@@ -32,10 +32,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-
-
-
-class ConstructorParameterChecker(val collector: MessageCollector, private val session: FirSession) :
+class KMapperConstructorParameterChecker(val collector: MessageCollector, private val session: FirSession) :
     FirCallChecker(MppCheckerKind.Common) {
 
 
@@ -56,44 +53,53 @@ class ConstructorParameterChecker(val collector: MessageCollector, private val s
             ?.toResolvedBaseSymbol()
             ?.hasAnnotation(annotation, session) ?: false
 
-        // Return if the call is not a constructor call and does not have the @KMapper annotation
         if (!hasAnnotation) return
 
         val function = expression as? FirFunctionCall ?: return
-        val typeArgument = expression.typeArguments.firstOrNull() as? FirTypeProjectionWithVariance ?: return
-        val resolvedTypeArgument = typeArgument.typeRef.coneTypeOrNull ?: return
-        val classSymbol = resolvedTypeArgument.toRegularClassSymbol(session) ?: return
-        val primaryConstructor = classSymbol.constructors(session).firstOrNull() ?: return
-        val constructor = primaryConstructor.valueParameterSymbols.map { parameter ->
-            Field(
-                name = parameter.name,
-                type = parameter.resolvedReturnType
-            )
-        }
 
-        val arg = function.arguments.first() as? FirAnonymousFunctionExpression ?: return
-        val statements = arg.anonymousFunction.body?.statements?.filterIsInstance<FirFunctionCall>() ?: return
-        val fields = statements.mapNotNull { call ->
-            call.extensionReceiver
-                ?.toReference(session)
-                ?.toResolvedPropertySymbol()
-                ?.let { receiver ->
-                    val arg = call.arguments.first()
-                    Field(
-                        name = receiver.name,
-                        type = arg.resolvedType,
-                    )
-                }
+        val fromFields = function.typeArguments
+            .getOrNull(1)
+            ?.let { it as? FirTypeProjectionWithVariance }
+            ?.extractFields()
+            ?: return
 
-        }
+        val toFields = function.typeArguments
+            .firstOrNull()
+            ?.let { it as? FirTypeProjectionWithVariance }
+            ?.extractFields()
+            ?: return
 
-        val diff = constructor.filterNot { c -> fields.any { m -> m == c } }
+
+        val mapping = function.arguments.firstOrNull().let { it as? FirAnonymousFunctionExpression }
+            ?.let { arg ->
+                arg.anonymousFunction.body
+                    ?.statements?.filterIsInstance<FirFunctionCall>()
+                    ?.mapNotNull { call ->
+                        call.extensionReceiver
+                            ?.toReference(session)
+                            ?.toResolvedPropertySymbol()
+                            ?.let { receiver ->
+                                val arg = call.arguments.first()
+                                Field(
+                                    name = receiver.name,
+                                    type = arg.resolvedType,
+                                )
+                            }
+
+                    }
+            }
+            ?: emptyList()
+
+
+        val diff = toFields
+            .filterNot { c -> mapping.any { m -> m == c } }
+            .filterNot { c -> fromFields.any { m -> m == c } }
         val missingParameterNames = diff.joinToString(", ") { it.name.asString() }
 
-        // Report error if there are missing constructor parameters
+        // Report if there are missing mapping parameters
         if (diff.isNotEmpty()) {
             reporter.reportOn(
-                source = typeArgument.source,
+                source = function.calleeReference.source,
                 factory = Diagnostics.MissingConstructorParameters,
                 a = missingParameterNames
             )
@@ -102,9 +108,9 @@ class ConstructorParameterChecker(val collector: MessageCollector, private val s
         // Add a diagnostic message to the report
         StringBuilder()
             .apply {
-                appendLine("Missing constructor parameters: $missingParameterNames")
-                appendLine("constructor: ${constructor}")
-                appendLine("mapping: $fields")
+                appendLine("constructorFields: ${toFields}")
+                appendLine("receiverFields: ${fromFields}")
+                appendLine("mapping: $mapping")
                 appendLine("diff: $diff")
                 appendLine(dumpFirCall(expression))
             }
@@ -113,6 +119,19 @@ class ConstructorParameterChecker(val collector: MessageCollector, private val s
             }
     }
 
+    private fun FirTypeProjectionWithVariance.extractFields(): List<Field>? {
+        val resolvedTypeArgument = typeRef.coneTypeOrNull
+        val classSymbol = resolvedTypeArgument?.toRegularClassSymbol(session)
+        val primaryConstructor = classSymbol?.constructors(session)?.firstOrNull()
+        return primaryConstructor?.valueParameterSymbols?.map { parameter ->
+            Field(
+                name = parameter.name,
+                type = parameter.resolvedReturnType
+            )
+        }
+    }
+
+
     internal class Extension(
         collector: MessageCollector,
         session: FirSession,
@@ -120,7 +139,7 @@ class ConstructorParameterChecker(val collector: MessageCollector, private val s
         override val expressionCheckers: ExpressionCheckers =
             object : ExpressionCheckers() {
                 override val callCheckers: Set<FirCallChecker> =
-                    setOf(ConstructorParameterChecker(collector, session))
+                    setOf(KMapperConstructorParameterChecker(collector, session))
             }
     }
 }
