@@ -41,6 +41,7 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
         val fields: List<Field>
     )
     infix fun Field.structuralCompare(other: Field): Boolean =
+        name == other.name &&
         fields.zip(other.fields).all { (a, b) -> a structuralCompare b }
 
     companion object {
