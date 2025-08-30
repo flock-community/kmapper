@@ -30,7 +30,7 @@ Add the plugin to your project's `build.gradle.kts`:
 ```kotlin
 plugins {
     kotlin("jvm") version "2.2.20-RC"
-    id("community.flock.kmapper") version "2.2.20-0.0.0-SNAPSHOT"
+    id("community.flock.kmapper") version "0.0.0-SNAPSHOT"
 }
 
 repositories {
