@@ -28,8 +28,8 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 class KMapperConstructorParameterChecker(val collector: MessageCollector, private val session: FirSession) :
-    FirCallChecker(MppCheckerKind.Common) {
 
+    FirCallChecker(MppCheckerKind.Common) {
 
     data class Field(
         val name: Name,

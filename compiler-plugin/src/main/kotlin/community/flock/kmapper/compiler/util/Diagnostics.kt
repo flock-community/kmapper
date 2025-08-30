@@ -31,10 +31,6 @@ object Diagnostics : KtDiagnosticsContainer() {
 
     override fun getRendererFactory(): BaseDiagnosticRendererFactory = DiagnosticRendererFactory
 
-    /**
-     * Copy of [org.jetbrains.kotlin.diagnostics.warning0] with hack for correct `PsiElement`
-     * class.
-     */
     context(container: KtDiagnosticsContainer)
     private fun warning0(
         positioningStrategy: AbstractSourceElementPositioningStrategy = SourceElementPositioningStrategies.DEFAULT,
@@ -73,7 +69,7 @@ object Diagnostics : KtDiagnosticsContainer() {
 }
 
 private object DiagnosticRendererFactory : BaseDiagnosticRendererFactory() {
-    override val MAP by KtDiagnosticFactoryToRendererMap("Poko") {
+    override val MAP by KtDiagnosticFactoryToRendererMap("KMapper") {
         it.put(
             factory = Diagnostics.MissingConstructorParameters,
             message = "Missing mapping for: {0}.",

@@ -1,11 +1,9 @@
 package community.flock.kmapper.compiler.ir
 
-import org.jetbrains.kotlin.DeprecatedForRemovalCompilerApi
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -23,15 +21,11 @@ import org.jetbrains.kotlin.ir.expressions.IrPropertyReference
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.util.constructors
-import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-/**
- * IR visitor that generates method bodies for @KMapper annotated functions
- */
 class KMapperIrBuildConstructorVisitor(
     private val context: IrPluginContext,
     private val collector: MessageCollector
@@ -53,7 +47,6 @@ class KMapperIrBuildConstructorVisitor(
         return transformedCall
     }
 
-    @OptIn(ObsoleteDescriptorBasedAPI::class, DeprecatedForRemovalCompilerApi::class)
     private fun createMapperImplementationFromCall(expression: IrCall): IrExpression {
         info("Creating mapper implementation from call")
         val builder = DeclarationIrBuilder(context, expression.symbol)
@@ -76,7 +69,7 @@ class KMapperIrBuildConstructorVisitor(
             ?.statements?.filterIsInstance<IrCall>().orEmpty()
             .associate { call ->
                 val field = call.arguments[1] as? IrPropertyReference ?: error("No name argument found")
-                val name = field.symbol.descriptor.name
+                val name = field.symbol.owner.name
                 val expression = call.arguments[2] ?: error("No expression argument found")
                 name to expression
             }
