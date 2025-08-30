@@ -1,7 +1,4 @@
-@file:OptIn(SymbolInternals::class, DirectDeclarationsAccess::class)
-
 import community.flock.kmapper.compiler.util.Diagnostics
-import community.flock.kmapper.compiler.util.Logger.dumpFirCall
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
@@ -12,7 +9,6 @@ import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.analysis.checkers.expression.ExpressionCheckers
 import org.jetbrains.kotlin.fir.analysis.checkers.expression.FirCallChecker
 import org.jetbrains.kotlin.fir.analysis.extensions.FirAdditionalCheckersExtension
-import org.jetbrains.kotlin.fir.declarations.DirectDeclarationsAccess
 import org.jetbrains.kotlin.fir.declarations.constructors
 import org.jetbrains.kotlin.fir.declarations.hasAnnotation
 import org.jetbrains.kotlin.fir.expressions.FirAnonymousFunctionExpression
@@ -23,7 +19,6 @@ import org.jetbrains.kotlin.fir.expressions.toReference
 import org.jetbrains.kotlin.fir.references.toResolvedBaseSymbol
 import org.jetbrains.kotlin.fir.references.toResolvedPropertySymbol
 import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
-import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirTypeProjectionWithVariance
 import org.jetbrains.kotlin.fir.types.coneTypeOrNull
@@ -112,7 +107,6 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
                 appendLine("receiverFields: ${fromFields}")
                 appendLine("mapping: $mapping")
                 appendLine("diff: $diff")
-                appendLine(dumpFirCall(expression))
             }
             .apply {
                 collector.report(CompilerMessageSeverity.INFO, toString())
