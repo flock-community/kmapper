@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.fir.analysis.checkers.expression.ExpressionCheckers
 import org.jetbrains.kotlin.fir.analysis.checkers.expression.FirCallChecker
 import org.jetbrains.kotlin.fir.analysis.extensions.FirAdditionalCheckersExtension
 import org.jetbrains.kotlin.fir.declarations.constructors
+import org.jetbrains.kotlin.fir.declarations.declaredProperties
 import org.jetbrains.kotlin.fir.declarations.hasAnnotation
 import org.jetbrains.kotlin.fir.expressions.FirAnonymousFunctionExpression
 import org.jetbrains.kotlin.fir.expressions.FirCall
@@ -37,8 +38,11 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
         val type: ConeKotlinType,
         val fields: List<Field>
     )
+
     infix fun Field.structuralCompare(other: Field): Boolean =
-        name == other.name && ((type.isPrimitive == other.type.isPrimitive && type == other.type) || other.fields.zip(fields).all { (a, b) -> a structuralCompare b })
+        name == other.name && ((type.isPrimitive == other.type.isPrimitive && type == other.type) || other.fields.zip(
+            fields
+        ).all { (a, b) -> a structuralCompare b })
 
     companion object {
         val kMapperAnnotation = FqName("community.flock.kmapper.KMapper")
@@ -59,13 +63,13 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
         val fromFields = function.typeArguments
             .getOrNull(1)
             ?.let { it as? FirTypeProjectionWithVariance }
-            ?.extractFields()
+            ?.constructorFields()
             ?: return
 
         val toFields = function.typeArguments
             .firstOrNull()
             ?.let { it as? FirTypeProjectionWithVariance }
-            ?.extractFields()
+            ?.extractConstructorFields()
             ?: return
 
         val mapping = function.arguments.firstOrNull().let { it as? FirAnonymousFunctionExpression }
@@ -81,7 +85,7 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
                                 Field(
                                     name = receiver.name,
                                     type = arg.resolvedType,
-                                    fields = arg.resolvedType.resolveFields()
+                                    fields = arg.resolvedType.resolveConstructorFields()
                                 )
                             }
 
@@ -91,7 +95,7 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
 
 
         val diff = toFields
-            .filterNot { to -> mapping.any { mapping -> to structuralCompare  mapping } }
+            .filterNot { to -> mapping.any { mapping -> to structuralCompare mapping } }
             .filterNot { to -> fromFields.any { from -> to structuralCompare from } }
 
         val missingParameterNames = diff.joinToString(", ") { it.name.asString() }
@@ -118,29 +122,40 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
         }
     }
 
-    private fun FirTypeProjectionWithVariance.extractFields(): List<Field>? {
+    private fun FirTypeProjectionWithVariance.extractConstructorFields(): List<Field>? {
         val resolvedTypeArgument = typeRef.coneTypeOrNull
-        val classSymbol = resolvedTypeArgument?.toRegularClassSymbol(session)
-        val primaryConstructor = classSymbol?.constructors(session)?.firstOrNull()
-        return primaryConstructor?.valueParameterSymbols?.map { parameter ->
-            Field(
-                name = parameter.name,
-                type = parameter.resolvedReturnType,
-                fields = parameter.resolvedReturnType.resolveFields()
-            )
-        }
+        return resolvedTypeArgument?.resolveConstructorFields()
     }
 
-    private fun ConeKotlinType.resolveFields(): List<Field> {
+    private fun ConeKotlinType.resolveConstructorFields(): List<Field> {
         val classSymbol = toRegularClassSymbol(session)
         val primaryConstructor = classSymbol?.constructors(session)?.firstOrNull()
         return primaryConstructor?.valueParameterSymbols?.map { parameter ->
             Field(
                 name = parameter.name,
                 type = parameter.resolvedReturnType,
-                fields = parameter.resolvedReturnType.resolveFields()
+                fields = parameter.resolvedReturnType.resolveConstructorFields()
             )
         }.orEmpty()
+    }
+
+    private fun FirTypeProjectionWithVariance.constructorFields(): List<Field>? {
+        val resolvedTypeArgument = typeRef.coneTypeOrNull
+        return resolvedTypeArgument?.resolvePropertyFields()
+
+    }
+
+    private fun ConeKotlinType.resolvePropertyFields(): List<Field> {
+        val classSymbol = toRegularClassSymbol(session)
+        return classSymbol?.declaredProperties(session)
+            .orEmpty()
+            .map { property ->
+                Field(
+                    name = property.name,
+                    type = property.resolvedReturnType,
+                    fields = property.resolvedReturnType.resolvePropertyFields()
+                )
+            }
     }
 
     internal class Extension(

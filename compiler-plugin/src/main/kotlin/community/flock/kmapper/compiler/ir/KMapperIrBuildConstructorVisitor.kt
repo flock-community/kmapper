@@ -1,9 +1,12 @@
+@file:OptIn(ObsoleteDescriptorBasedAPI::class)
+
 package community.flock.kmapper.compiler.ir
 
 import community.flock.kmapper.compiler.util.MessageCollectorUtil.info
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.builders.IrBuilder
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
@@ -91,11 +94,10 @@ class KMapperIrBuildConstructorVisitor(
         val constructorCall = builder.irCallConstructor(toShape.constructor.symbol, emptyList()).apply {
             toShape.fields.onEachIndexed { index, field ->
                 val mappedValue = when {
-                    field in fromTypeArgument.convertShape().fields -> builder.irGetPropertyByName(
+                    field in fromTypeArgument.readableProperties() -> builder.irGetPropertyByName(
                         receiver = receiverArgument,
                         propertyName = field.name
                     )
-
                     else -> definedMapping[field.name]
                 }
                 if (mappedValue == null) {
@@ -117,11 +119,19 @@ class KMapperIrBuildConstructorVisitor(
 
     private fun IrType.convertShape(): Shape {
         val typeArgumentClass = classOrNull?.owner ?: error("Could not resolve target class for mapper")
-        val typeArgumentConstructor =
-            typeArgumentClass.constructors.firstOrNull() ?: error("No primary constructor found for type argument")
+        val typeArgumentConstructor = typeArgumentClass.constructors.firstOrNull() ?: error("No primary constructor found for type argument")
         return Shape(
             typeArgumentConstructor,
             typeArgumentConstructor.parameters.map { Field(it.name, it.type) })
+    }
+
+    // Returns all readable properties (with a getter) as fields: used to detect available source fields.
+    private fun IrType.readableProperties(): List<Field> {
+        val typeArgumentClass = classOrNull?.owner ?: error("Could not resolve target class for mapper")
+        return typeArgumentClass.declarations
+            .filterIsInstance<IrProperty>()
+            .filter { it.getter != null }
+            .map { prop -> Field(prop.name, prop.getter!!.returnType) }
     }
 
     private fun IrBuilder.irGetPropertyByName(receiver: IrExpression, propertyName: Name): IrExpression {
