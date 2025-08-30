@@ -77,6 +77,86 @@ class KMapperTest {
     }
 
     @Test
+    fun shouldCompile_nestedEqualClasses() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class Person(val firstName: String, val lastName: String, val age: Int, val address:  Address)
+                |data class Address(val street: String, val city: String, val zipCode: String)
+                |
+                |data class PersonDto(val name: String, val age: Int, val address: AddressDto)
+                |data class AddressDto(val street: String, val city: String, val zipCode: String)
+                |
+                |fun main() {
+                |    val user = Person(
+                |        firstName = "John",
+                |        lastName = "Doe",
+                |        age = 99,
+                |        address = Address("Main Street", "Hamburg", "22049")
+                |    )
+                |    val res: PersonDto = user.mapper {
+                |        to::name map "${it.firstName} ${it.lastName}"
+                |    }
+                |    println(res)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
+                    "Expected compiler plugin marker not found in output"
+                )
+                assertTrue(
+                    output.contains("PersonDto(name=John Doe, age=99, address=AddressDto(street=Main Street, city=Hamburg, zipCode=22049))"),
+                    "Expected PersonDto(name=John Doe, age=99, address=AddressDto(street=Main Street, city=Hamburg, zipCode=22049)) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_deepNestedEqualClasses() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class Person(val firstName: String, val lastName: String, val age: Int, val address:  Address)
+                |data class Address(val streetCity: StreetCity, val zipCode: String)
+                |data class StreetCity(val street: String, val city: String)
+                |
+                |data class PersonDto(val name: String, val age: Int, val address: AddressDto)
+                |data class AddressDto(val streetCity: StreetCity, val zipCode: String)
+                |data class StreetCityDto(val street: String, val city: String)
+                |
+                |fun main() {
+                |    val user = Person(
+                |        firstName = "John",
+                |        lastName = "Doe",
+                |        age = 99,
+                |        address = Address(StreetCity("Main Street", "Hamburg"), "22049")
+                |    )
+                |    val res: PersonDto = user.mapper {
+                |        to::name map "${it.firstName} ${it.lastName}"
+                |    }
+                |    println(res)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(output.contains("PersonDto(name=John Doe, age=99, address=AddressDto(streetCity=StreetCity(street=Main Street, city=Hamburg), zipCode=22049))"))
+            }
+    }
+
+
+    @Test
     fun shouldCompileError_missingParameterAge() {
         IntegrationTest(options)
             .file("App.kt") {

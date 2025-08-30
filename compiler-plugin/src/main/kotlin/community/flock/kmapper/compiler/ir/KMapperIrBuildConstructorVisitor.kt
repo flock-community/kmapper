@@ -1,10 +1,11 @@
 package community.flock.kmapper.compiler.ir
 
+import community.flock.kmapper.compiler.util.MessageCollectorUtil.info
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.IrBlockBuilder
 import org.jetbrains.kotlin.ir.builders.irBlock
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
@@ -31,8 +32,6 @@ class KMapperIrBuildConstructorVisitor(
     private val collector: MessageCollector
 ) : IrElementTransformerVoid() {
 
-    private fun info(message: String) = collector.report(CompilerMessageSeverity.INFO, "[MapperIrVisitor] $message")
-
     companion object {
         val KMAPPER_ANNOTATION_FQN = FqName("community.flock.kmapper.KMapper")
     }
@@ -48,21 +47,14 @@ class KMapperIrBuildConstructorVisitor(
     }
 
     private fun createMapperImplementationFromCall(expression: IrCall): IrExpression {
-        info("Creating mapper implementation from call")
+        collector.info("Creating mapper implementation from call")
         val builder = DeclarationIrBuilder(context, expression.symbol)
 
         val callArgument = expression.arguments.getOrNull(1) as? IrFunctionExpression
 
         val typeArgument = expression.typeArguments[0] ?: error("Could not resolve target type for mapper")
-        val typeArgumentClass = typeArgument.classOrNull?.owner ?: error("Could not resolve target class for mapper")
-        val typeArgumentConstructor =
-            typeArgumentClass.constructors.firstOrNull() ?: error("No primary constructor found for type argument")
 
-        val toFields = typeArgumentConstructor.parameters.associate { it.name to it.type }
         val fromFields = expression.typeArguments[1]?.extractFields() ?: emptyMap()
-
-        info("fromFields: $fromFields")
-        info("toFields: $toFields")
 
         val definedMapping = callArgument?.function
             ?.body.let { it as? IrBlockBody }
@@ -93,6 +85,14 @@ class KMapperIrBuildConstructorVisitor(
                 }
             }
 
+            val typeArgumentClass = typeArgument.classOrNull?.owner
+                ?: error("Could not resolve target class for mapper")
+
+            val typeArgumentConstructor = typeArgumentClass.constructors.firstOrNull()
+                ?: error("No primary constructor found for type argument")
+
+            val toFields = typeArgumentConstructor.parameters.associate { it.name to it.type }
+
             val constructorCall = irCallConstructor(typeArgumentConstructor.symbol, listOf(typeArgument)).apply {
                 toFields.onEachIndexed { index, entry ->
                     val mappedValue = when {
@@ -101,9 +101,14 @@ class KMapperIrBuildConstructorVisitor(
                             propertyName = entry.key
                         )
 
-                        else -> definedMapping[entry.key] ?: error("Missing mapping for: ${entry.key.asString()}.")
+                        else -> definedMapping[entry.key]
                     }
-                    arguments[index] = mappedValue.transform(remapper, null)
+                    if (mappedValue == null) {
+                        val receiver = irGetPropertyByName(receiver = builder.irGet(itTemp), propertyName = entry.key)
+                        arguments[index] = recursiveConstructor(entry.value, receiver)
+                    } else {
+                        arguments[index] = mappedValue.transform(remapper, null)
+                    }
                 }
             }
             +builder.irGet(itTemp)
@@ -118,7 +123,7 @@ class KMapperIrBuildConstructorVisitor(
         return typeArgumentConstructor.parameters.associate { it.name to it.type }
     }
 
-    private fun IrBuilderWithScope.irGetPropertyByName(receiver: IrExpression, propertyName: Name): IrExpression {
+    private fun IrBlockBuilder.irGetPropertyByName(receiver: IrExpression, propertyName: Name): IrExpression {
         val receiverClass = receiver.type.classOrNull?.owner
             ?: error("Receiver type has no class owner for property $propertyName")
 
@@ -132,6 +137,18 @@ class KMapperIrBuildConstructorVisitor(
 
         return irCall(getter.symbol).apply {
             dispatchReceiver = receiver
+        }
+    }
+
+    private fun IrBlockBuilder.recursiveConstructor(toType: IrType, fromExpression: IrExpression): IrExpression {
+
+        val typeArgumentClass = toType.classOrNull?.owner ?: error("Could not resolve target class for mapper")
+        val typeArgumentConstructor = typeArgumentClass.constructors.firstOrNull() ?: error("No primary constructor")
+
+        return irCallConstructor(typeArgumentConstructor.symbol, listOf(toType)).apply {
+            fromExpression.type.extractFields().onEachIndexed { index, (key) ->
+                arguments[index] = irGetPropertyByName(fromExpression, key)
+            }
         }
     }
 }
