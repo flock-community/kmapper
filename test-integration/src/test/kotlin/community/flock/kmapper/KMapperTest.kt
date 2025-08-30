@@ -77,6 +77,42 @@ class KMapperTest {
     }
 
     @Test
+    fun shouldCompile_nestedEqualClasses() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class Person(val firstName: String, val lastName: String, val age: Int, val address:  Address)
+                |data class Address(val street: String, val city: String, val zipCode: String)
+                |
+                |data class PersonDto(val name: String, val age: Int, val address: AddressDto)
+                |data class AddressDto(val street: String, val city: String, val zipCode: String)
+                |
+                |fun main() {
+                |    val user = Person(
+                |        firstName = "John",
+                |        lastName = "Doe",
+                |        age = 99,
+                |        address = Address("Main Street", "Hamburg", "22049")
+                |    )
+                |    val res: PersonDto = user.mapper {
+                |        to::name map "${it.firstName} ${it.lastName}"
+                |    }
+                |    println(res)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileFail { output ->
+
+            }
+    }
+
+
+    @Test
     fun shouldCompileError_missingParameterAge() {
         IntegrationTest(options)
             .file("App.kt") {
