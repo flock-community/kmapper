@@ -61,7 +61,7 @@ data class UserDto(val name: String, val age: Sting)
 ```kotlin
 fun main() {
     val user = User("John", "Doe", 99)
-    val userDto = user.mapper<UserDto> {
+    val userDto: UserDto = user.mapper {
         to::age map it.age.toString()
         to::name map "${it.firstName} ${it.lastName}"
     }
