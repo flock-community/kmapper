@@ -1,3 +1,5 @@
+import community.flock.kmapper.compiler.fir.Field
+import community.flock.kmapper.compiler.fir.deepEqual
 import community.flock.kmapper.compiler.util.Diagnostics
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
@@ -23,34 +25,21 @@ import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirTypeProjectionWithVariance
 import org.jetbrains.kotlin.fir.types.coneTypeOrNull
-import org.jetbrains.kotlin.fir.types.isPrimitive
 import org.jetbrains.kotlin.fir.types.resolvedType
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 
-class KMapperConstructorParameterChecker(val collector: MessageCollector, private val session: FirSession) :
+class KMapperFirMappingChecker(val collector: MessageCollector, private val session: FirSession) :
 
     FirCallChecker(MppCheckerKind.Common) {
-
-    data class Field(
-        val name: Name,
-        val type: ConeKotlinType,
-        val fields: List<Field>
-    )
-
-    infix fun Field.structuralCompare(other: Field): Boolean =
-        name == other.name && (
-            (type.isPrimitive && other.type.isPrimitive && type == other.type) ||
-            (!type.isPrimitive && !other.type.isPrimitive && other.fields.zip(fields).all { (a, b) -> a structuralCompare b })
-        )
 
     companion object {
         val kMapperAnnotation = FqName("community.flock.kmapper.KMapper")
     }
 
+
     context(context: CheckerContext, reporter: DiagnosticReporter)
-    override fun check(expression: FirCall) {
+    override fun check(expression: FirCall) = context(session, collector) {
 
         val annotation = ClassId.topLevel(kMapperAnnotation)
         val hasAnnotation = expression.toReference(session)
@@ -94,10 +83,9 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
             }
             ?: emptyList()
 
-
         val diff = toFields
-            .filterNot { to -> mapping.any { mapping -> to structuralCompare mapping } }
-            .filterNot { to -> fromFields.any { from -> to structuralCompare from } }
+            .filterNot { to -> mapping.any { mapping -> to deepEqual mapping } }
+            .filterNot { to -> fromFields.any { from -> to deepEqual from } }
 
         val missingParameterNames = diff.joinToString(", ") { it.name.asString() }
 
@@ -165,7 +153,7 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
         override val expressionCheckers: ExpressionCheckers =
             object : ExpressionCheckers() {
                 override val callCheckers: Set<FirCallChecker> =
-                    setOf(KMapperConstructorParameterChecker(collector, session))
+                    setOf(KMapperFirMappingChecker(collector, session))
             }
     }
 }
