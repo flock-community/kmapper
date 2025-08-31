@@ -65,7 +65,7 @@ fun main() {
         to::age map it.age.toString()
         to::name map "${it.firstName} ${it.lastName}"
     }
-    println(userDto) // Output: UserDto(name=John Doe, age=25)
+    println(userDto) // Output: UserDto(name=John Doe, age=99)
 }
 ```
 
