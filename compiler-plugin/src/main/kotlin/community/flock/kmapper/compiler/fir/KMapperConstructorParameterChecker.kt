@@ -40,9 +40,10 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
     )
 
     infix fun Field.structuralCompare(other: Field): Boolean =
-        name == other.name && ((type.isPrimitive == other.type.isPrimitive && type == other.type) || other.fields.zip(
-            fields
-        ).all { (a, b) -> a structuralCompare b })
+        name == other.name && (
+            (type.isPrimitive && other.type.isPrimitive && type == other.type) ||
+            (!type.isPrimitive && !other.type.isPrimitive && other.fields.zip(fields).all { (a, b) -> a structuralCompare b })
+        )
 
     companion object {
         val kMapperAnnotation = FqName("community.flock.kmapper.KMapper")
@@ -142,7 +143,6 @@ class KMapperConstructorParameterChecker(val collector: MessageCollector, privat
     private fun FirTypeProjectionWithVariance.constructorFields(): List<Field>? {
         val resolvedTypeArgument = typeRef.coneTypeOrNull
         return resolvedTypeArgument?.resolvePropertyFields()
-
     }
 
     private fun ConeKotlinType.resolvePropertyFields(): List<Field> {

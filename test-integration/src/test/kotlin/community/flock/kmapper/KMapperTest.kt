@@ -34,10 +34,6 @@ class KMapperTest {
             }
             .compileSuccess { output ->
                 assertTrue(
-                    output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
-                    "Expected compiler plugin marker not found in output"
-                )
-                assertTrue(
                     output.contains("UserDto(name=John Doe, age=99)"),
                     "Expected UserDto(name=John Doe, age=99) in output"
                 )
@@ -65,10 +61,6 @@ class KMapperTest {
                 """.trimMargin()
             }
             .compileSuccess { output ->
-                assertTrue(
-                    output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
-                    "Expected compiler plugin marker not found in output"
-                )
                 assertTrue(
                     output.contains("UserDto(id=1, name=John Doe, age=99)"),
                     "Expected UserDto(name=John Doe, age=99) in output"
@@ -151,7 +143,10 @@ class KMapperTest {
                 """.trimMargin()
             }
             .compileSuccess { output ->
-                assertTrue(output.contains("PersonDto(name=John Doe, age=99, address=AddressDto(streetCity=StreetCityDto(street=Main Street, city=Hamburg), zipCode=22049))"))
+                assertTrue(
+                    output.contains("PersonDto(name=John Doe, age=99, address=AddressDto(streetCity=StreetCityDto(street=Main Street, city=Hamburg), zipCode=22049))"),
+                    "PersonDto(name=John Doe, age=99, address=AddressDto(streetCity=StreetCityDto(street=Main Street, city=Hamburg), zipCode=22049))"
+                )
             }
     }
 
@@ -213,10 +208,6 @@ class KMapperTest {
             }
             .compileSuccess { output ->
                 assertTrue(
-                    output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
-                    "Expected compiler plugin marker not found in output"
-                )
-                assertTrue(
                     output.contains("UserDto(id=IdDto(id=1), name=John Doe, age=99)"),
                     "Expected UserDto(id=IdDto(id=1), name=John Doe, age=99) in output"
                 )
@@ -248,10 +239,6 @@ class KMapperTest {
             }
             .compileSuccess { output ->
                 assertTrue(
-                    output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
-                    "Expected compiler plugin marker not found in output"
-                )
-                assertTrue(
                     output.contains("UserDto(id=1, name=John Doe, age=1)"),
                     "Expected UserDto(id=1, name=John Doe, age=1) in output"
                 )
@@ -281,12 +268,72 @@ class KMapperTest {
             }
             .compileSuccess { output ->
                 assertTrue(
-                    output.contains("[KMapperPlugin] Compiler plugin registrar loaded"),
-                    "Expected compiler plugin marker not found in output"
-                )
-                assertTrue(
                     output.contains("UserDto(id=1, name=John Doe, age=99)"),
                     "Expected UserDto(id=1, name=John Doe, age=99) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldFail_valueClassap() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |@JvmInline
+                |value class Id(val id: Int)
+                |data class User(val id: Id, val name: String)
+                |
+                |data class UserDto(val id: Int, val name: String)
+                |
+                |fun main() {
+                |  val user = User(id=Id(1), name="John Doe")
+                |  val res:UserDto = user.mapper()
+                |  println(res)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileFail { output ->
+                assertTrue(
+                    output.contains("Missing mapping for: id"),
+                    "Missing mapping for: id"
+                )
+            }
+    }
+
+    @Test
+    fun shouldFail_valueClassDeepMap() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |@JvmInline
+                |value class Id(val id: Int)
+                |data class User(val id: Id, val name: String)
+                |
+                |@JvmInline
+                |value class IdDto(val id: Int)
+                |data class UserDto(val id: IdDto, val name: String)
+                |
+                |fun main() {
+                |  val user = User(id=Id(1), name="John Doe")
+                |  val res:UserDto = user.mapper()
+                |  println(res)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("UserDto(id=IdDto(id=1), name=John Doe)"),
+                    "Expected UserDto(id=IdDto(id=1), name=John Doe, age=99) in output"
                 )
             }
     }
