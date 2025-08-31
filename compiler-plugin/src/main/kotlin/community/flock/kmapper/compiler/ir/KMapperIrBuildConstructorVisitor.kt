@@ -3,7 +3,6 @@
 package community.flock.kmapper.compiler.ir
 
 import community.flock.kmapper.compiler.util.MessageCollectorUtil.info
-import org.intellij.lang.annotations.Identifier
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
@@ -101,21 +100,27 @@ class KMapperIrBuildConstructorVisitor(
                         receiver = receiverArgument,
                         propertyName = field.name
                     )
+
                     else -> definedMapping[field.name]
                 }
                 if (mappedValue == null) {
                     val receiver = builder.irGetPropertyByName(receiver = receiverArgument, propertyName = field.name)
-                    if(field.type.makeNotNull().classOrNull?.owner?.kind == ClassKind.ENUM_CLASS){
+                    if (field.type.makeNotNull().classOrNull?.owner?.kind == ClassKind.ENUM_CLASS) {
                         val enumClass = field.type.makeNotNull().classOrNull!!.owner
                         val valueOfFun = enumClass.declarations
                             .filterIsInstance<IrSimpleFunction>()
-                            .first { it.name.asString() == "valueOf" &&
-                                it.parameters.filter { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }.size == 1 &&
-                                it.parameters.filter { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }[0].type.makeNotNull().isString() }
-                        val enumValue = builder.irGetPropertyByName(receiver = receiverArgument, propertyName = field.name)
-                        val nameValue = builder.irGetPropertyByName(receiver = enumValue, propertyName = Name.identifier("name"))
+                            .first {
+                                it.name.asString() == "valueOf" &&
+                                    it.parameters.filter { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }.size == 1 &&
+                                    it.parameters.filter { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }[0].type.makeNotNull()
+                                        .isString()
+                            }
+                        val enumValue =
+                            builder.irGetPropertyByName(receiver = receiverArgument, propertyName = field.name)
+                        val nameValue =
+                            builder.irGetPropertyByName(receiver = enumValue, propertyName = Name.identifier("name"))
                         arguments[index] = builder.irCall(valueOfFun.symbol).apply { arguments[0] = nameValue }
-                    }else{
+                    } else {
                         arguments[index] =
                             builder.recursiveConstructor(
                                 receiver,
@@ -134,7 +139,8 @@ class KMapperIrBuildConstructorVisitor(
 
     private fun IrType.convertShape(): Shape {
         val typeArgumentClass = classOrNull?.owner ?: error("Could not resolve target class for mapper")
-        val typeArgumentConstructor = typeArgumentClass.constructors.firstOrNull() ?: error("No primary constructor found for type argument")
+        val typeArgumentConstructor =
+            typeArgumentClass.constructors.firstOrNull() ?: error("No primary constructor found for type argument")
         return Shape(
             typeArgumentConstructor,
             typeArgumentConstructor.parameters.map { Field(it.name, it.type) })

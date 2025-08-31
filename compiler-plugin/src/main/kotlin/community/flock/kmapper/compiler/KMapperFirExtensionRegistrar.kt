@@ -1,5 +1,6 @@
 package community.flock.kmapper.compiler
 
+import KMapperFirMappingChecker
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
