@@ -12,6 +12,7 @@ data class Shape(
     val constructor: IrConstructor,
     val fields: List<Field>
 )
+
 data class Field(val name: Name, val type: IrType) {
     override fun equals(other: Any?): Boolean {
         return other is Field && name == other.name && type.makeNotNull() == other.type.makeNotNull()
