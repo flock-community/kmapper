@@ -1,5 +1,6 @@
 package community.flock.kmapper.compiler
 
+import KMapperFirMappingChecker
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
@@ -9,6 +10,6 @@ import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
  */
 class KMapperFirExtensionRegistrar(val collector: MessageCollector) : FirExtensionRegistrar() {
     override fun ExtensionRegistrarContext.configurePlugin() {
-        +{ session: FirSession -> KMapperConstructorParameterChecker.Extension(collector, session) }
+        +{ session: FirSession -> KMapperFirMappingChecker.Extension(collector, session) }
     }
 }

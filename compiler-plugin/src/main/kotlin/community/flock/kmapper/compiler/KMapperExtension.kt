@@ -2,7 +2,7 @@
 
 package community.flock.kmapper.compiler
 
-import community.flock.kmapper.compiler.ir.KMapperIrBuildConstructorVisitor
+import community.flock.kmapper.compiler.ir.KMapperIrBuildMapperVisitor
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
@@ -14,6 +14,6 @@ import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
  */
 class KMapperExtension(val collector: MessageCollector) : IrGenerationExtension {
     override fun generate(moduleFragment: IrModuleFragment, pluginContext: IrPluginContext) {
-        moduleFragment.transformChildrenVoid(KMapperIrBuildConstructorVisitor(pluginContext, collector))
+        moduleFragment.transformChildrenVoid(KMapperIrBuildMapperVisitor(pluginContext, collector))
     }
 }

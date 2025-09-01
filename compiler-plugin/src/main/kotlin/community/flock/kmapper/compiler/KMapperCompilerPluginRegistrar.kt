@@ -14,7 +14,8 @@ class KMapperCompilerPluginRegistrar : CompilerPluginRegistrar() {
     override val supportsK2: Boolean = true
 
     override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-        val collector: MessageCollector = configuration.get(CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY) ?: MessageCollector.NONE
+        val collector: MessageCollector =
+            configuration.get(CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY) ?: MessageCollector.NONE
         collector.report(CompilerMessageSeverity.INFO, "[KMapperPlugin] Compiler plugin registrar loaded")
         FirExtensionRegistrarAdapter.registerExtension(KMapperFirExtensionRegistrar(collector))
         IrGenerationExtension.registerExtension(KMapperExtension(collector))
