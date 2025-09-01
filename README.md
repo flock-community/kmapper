@@ -53,19 +53,19 @@ import community.flock.kmapper.mapper
 2. Define your data classes:
 
 ```kotlin
-data class User(val id: Int, val firstName: String, val lastName: String, val age: Int, val email: String)
-data class UserDto(val id: Int, val name: String, val age: Sting, val email: String?)
+data class User(val id: Int, val firstName: String, val lastName: String, val age: Int, val active: Boolean)
+data class UserDto(val id: Int, val name: String, val age: Sting, val active: Boolean = false)
 ```
 
 3. Use the mapper DSL to transform objects:
 
 ```kotlin
 fun main() {
-    val user = User("John", "Doe", 99)
+    val user = User("John", "Doe", 99, true)
     val userDto: UserDto = user.mapper {
         to::age map it.age.toString()
         to::name map "${it.firstName} ${it.lastName}"
-        to::email.ignore()
+        to::active.ignore()
     }
     println(userDto) // Output: UserDto(name=John Doe, age=99)
 }
