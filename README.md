@@ -65,7 +65,7 @@ fun main() {
     val userDto: UserDto = user.mapper {
         to::age map it.age.toString()
         to::name map "${it.firstName} ${it.lastName}"
-        to::email map null // Ignore email
+        to::email.ignore()
     }
     println(userDto) // Output: UserDto(name=John Doe, age=99)
 }

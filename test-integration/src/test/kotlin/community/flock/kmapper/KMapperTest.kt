@@ -580,4 +580,35 @@ class KMapperTest {
                 )
             }
     }
+
+    @Test
+    fun shouldSuccess_ignoreValue() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class Person(val firstName: String)
+                |data class PersonDto(val firstName: String = "HELLO")
+                |
+                |fun main() {
+                |  val person = Person(firstName="John")
+                |  val dto:PersonDto = person.mapper {
+                |    to::firstName.ignore()
+                |  }
+                |  println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess{ output ->
+                assertTrue(
+                    output.contains("PersonDto(firstName=HELLO)"),
+                    "PersonDto(firstName=HELLO)"
+                )
+            }
+    }
+
 }

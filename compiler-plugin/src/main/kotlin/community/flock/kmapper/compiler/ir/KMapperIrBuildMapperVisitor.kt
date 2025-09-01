@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.builders.IrBuilder
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrParameterKind
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -57,14 +58,18 @@ class KMapperIrBuildMapperVisitor(
         val receiverArgument = expression.arguments.getOrNull(0) ?: error("No extension receiver found for mapper call")
         val callArgument = expression.arguments.getOrNull(1) as? IrFunctionExpression
 
-        val definedMapping = callArgument?.function
+        val mapping = callArgument?.function
             ?.body.let { it as? IrBlockBody }
             ?.statements?.filterIsInstance<IrCall>().orEmpty()
             .associate { call ->
-                val field = call.arguments[1] as? IrPropertyReference ?: error("No name argument found")
-                val name = field.symbol.owner.name
-                val expression = call.arguments[2] ?: error("No expression argument found")
-                name to expression
+                val callName = call.symbol.owner.name
+                val field = call.arguments.getOrNull(1) as? IrPropertyReference ?: error("No name argument found")
+                val fieldName = field.symbol.owner.name
+                when (callName.identifier) {
+                    "map" -> fieldName to call.arguments.getOrNull(2)
+                    "ignore" -> fieldName to null
+                    else -> error("Unknown mapping type: $callName")
+                }
             }
 
         val toTypeArgument = expression.typeArguments[0] ?: error("Could not resolve target type for mapper")
@@ -87,16 +92,21 @@ class KMapperIrBuildMapperVisitor(
 
         val constructorCall = builder.irCallConstructor(toShape.constructor.symbol, emptyList()).apply {
             toShape.fields.onEachIndexed { index, field ->
-                val mappedValue = definedMapping[field.name]
-                    ?: fromTypeArgument.readableProperties()
-                        .find { it == field }
-                        ?.let {
-                            builder.irGetPropertyByName(
-                                receiver = receiverArgument,
-                                propertyName = field.name
-                            )
-                        }
-                    ?: toShape.constructor.parameters[index].defaultValue?.expression
+
+                val mappedValue =
+                    if (mapping.containsKey(field.name)) {
+                        mapping[field.name] ?: toShape.constructor.defaultValue(index)
+                    } else {
+                        fromTypeArgument.readableProperties()
+                            .find { it == field }
+                            ?.let {
+                                builder.irGetPropertyByName(
+                                    receiver = receiverArgument,
+                                    propertyName = field.name
+                                )
+                            }
+                            ?: toShape.constructor.defaultValue(index)
+                    }
 
                 collector.info("mappedValue: $mappedValue")
                 arguments[index] =
@@ -118,6 +128,8 @@ class KMapperIrBuildMapperVisitor(
 
         return constructorCall
     }
+
+    private fun IrConstructor.defaultValue(index: Int) = parameters[index].defaultValue?.expression
 
     private fun IrType.convertShape(): Shape {
         val typeArgumentClass = classOrNull?.owner ?: error("Could not resolve target class for mapper")

@@ -71,13 +71,14 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
                             ?.toReference(session)
                             ?.toResolvedPropertySymbol()
                             ?.let { receiver ->
-                                val arg = call.arguments.first()
-                                Field(
-                                    name = receiver.name,
-                                    type = arg.resolvedType,
-                                    hasDefaultValue = false,
-                                    fields = arg.resolvedType.resolveConstructorFields()
-                                )
+                                call.arguments.firstOrNull()?.let { arg ->
+                                    Field(
+                                        name = receiver.name,
+                                        type = arg.resolvedType,
+                                        hasDefaultValue = false,
+                                        fields = arg.resolvedType.resolveConstructorFields()
+                                    )
+                                }
                             }
 
                     }
