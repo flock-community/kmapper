@@ -14,6 +14,7 @@ KMapper is a Kotlin compiler plugin that provides code generation capabilities f
 - **Fluent DSL**: Intuitive mapping syntax with `to::property map value`
 - **Compile-time Validation**: Ensures all required constructor parameters are mapped
 - **IR-Based Generation**: Uses Kotlin's IR (Intermediate Representation) for robust code generation
+- **Symmetric Enum Mapping**: When source and target enum entries share the same names, the plugin automatically maps them without additional configuration
 
 ## Requirements
 
@@ -69,9 +70,35 @@ fun main() {
 }
 ```
 
+### Symmetric Enum Mapping
+
+When your source and target enums have the same entry names, KMapper will map them automatically by name at compile time—no manual conversion needed.
+
+Example:
+
+```kotlin
+enum class Status { NEW, ACTIVE, SUSPENDED }
+data class User (val name: String, val status: Status)
+
+enum class StatusDto { NEW, ACTIVE, SUSPENDED }
+data class UserDto (val name: String, val status: StatusDto)
+
+fun main() {
+    val user = Source(name = "John Doe", status = SourceStatus.ACTIVE)
+    val dto: UserDto = user.mapper { }
+    println(dto) // UserDto(name=John Doe, status=ACTIVE)
+}
+```
+
 ### Generated Code
 
 The plugin automatically generates the mapping implementation at compile time, replacing the `mapper` function call with the actual object construction code.
+
+
+
+Notes:
+- Symmetric enum mapping triggers when the target constructor parameter type is an enum and there is a source value of another enum with the same entry names.
+- If names differ or you need custom mapping, you can still provide an explicit mapping expression: `to::status map when(it.status){ SourceStatus.NEW -> TargetStatus.NEW /* ... */ }`.
 
 ### IDE Support
 The K2 Kotlin IntelliJ plugin supports running third party FIR plugins in the IDE, but this feature is hidden behind a flag.
