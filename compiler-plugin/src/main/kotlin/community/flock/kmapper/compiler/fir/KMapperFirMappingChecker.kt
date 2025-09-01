@@ -75,6 +75,7 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
                                 Field(
                                     name = receiver.name,
                                     type = arg.resolvedType,
+                                    hasDefaultValue = false,
                                     fields = arg.resolvedType.resolveConstructorFields()
                                 )
                             }
@@ -86,6 +87,7 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
         val diff = toFields
             .filterNot { to -> mapping.any { mapping -> to deepEqual mapping } }
             .filterNot { to -> fromFields.any { from -> to deepEqual from } }
+            .filterNot { to -> to.hasDefaultValue }
 
         val missingParameterNames = diff.joinToString(", ") { it.name.asString() }
 
@@ -123,6 +125,7 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
             Field(
                 name = parameter.name,
                 type = parameter.resolvedReturnType,
+                hasDefaultValue = parameter.hasDefaultValue,
                 fields = parameter.resolvedReturnType.resolveConstructorFields()
             )
         }.orEmpty()
@@ -141,6 +144,7 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
                 Field(
                     name = property.name,
                     type = property.resolvedReturnType,
+                    hasDefaultValue = property.resolvedDefaultValue != null,
                     fields = property.resolvedReturnType.resolvePropertyFields()
                 )
             }

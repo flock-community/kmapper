@@ -6,27 +6,40 @@ import org.jetbrains.kotlin.fir.declarations.DirectDeclarationsAccess
 import org.jetbrains.kotlin.fir.declarations.FirEnumEntry
 import org.jetbrains.kotlin.fir.declarations.utils.isClass
 import org.jetbrains.kotlin.fir.declarations.utils.isEnumClass
+import org.jetbrains.kotlin.fir.resolve.toClassSymbol
 import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
+import org.jetbrains.kotlin.fir.types.isMarkedNullable
 import org.jetbrains.kotlin.fir.types.isPrimitive
+import org.jetbrains.kotlin.fir.types.valueParameterName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.types.model.isMarkedNullable
 
 data class Field(
     val name: Name,
     val type: ConeKotlinType,
+    val hasDefaultValue: Boolean,
     val fields: List<Field>
 )
 
 context(session: FirSession, collector: MessageCollector)
 infix fun Field.deepEqual(other: Field): Boolean =
     name == other.name &&
-        (primaryEqual(this, other) || enumsEqual(this, other) || fieldsEqual(this, other))
+        nullableEqual(this, other) &&
+    (primaryEqual(this, other) || enumsEqual(this, other) || fieldsEqual(this, other))
 
+context(session: FirSession, collector: MessageCollector)
+private fun nullableEqual(to: Field, from: Field): Boolean {
+    if (to.type.isMarkedNullable && !from.type.isMarkedNullable) return true
+    return to.type.isMarkedNullable == from.type.isMarkedNullable
+}
 
 private fun primaryEqual(to: Field, from: Field): Boolean {
     if (!to.type.isPrimitive || !from.type.isPrimitive) return false
+    if ( to.type.isMarkedNullable != from.type.isMarkedNullable ) return false
+    if ( to.type.isMarkedNullable != from.type.isMarkedNullable ) return false
     return to.type == from.type
 }
 
