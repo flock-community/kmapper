@@ -6,11 +6,11 @@ import community.flock.kmapper.compiler.util.MessageCollectorUtil.info
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.builders.IrBuilder
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
+import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrParameterKind
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.ir.types.isString
 import org.jetbrains.kotlin.ir.types.makeNotNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
-import org.jetbrains.kotlin.ir.util.dumpKotlinLike
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
@@ -37,7 +36,6 @@ class KMapperIrBuildMapperVisitor(
     private val context: IrPluginContext,
     private val collector: MessageCollector
 ) : IrElementTransformerVoid() {
-
 
     companion object {
         val KMAPPER_ANNOTATION_FQN = FqName("community.flock.kmapper.KMapper")
@@ -60,32 +58,33 @@ class KMapperIrBuildMapperVisitor(
         val receiverArgument = expression.arguments.getOrNull(0) ?: error("No extension receiver found for mapper call")
         val callArgument = expression.arguments.getOrNull(1) as? IrFunctionExpression
 
-        val definedMapping = callArgument?.function
+        val mapping = callArgument?.function
             ?.body.let { it as? IrBlockBody }
             ?.statements?.filterIsInstance<IrCall>().orEmpty()
             .associate { call ->
-                val field = call.arguments[1] as? IrPropertyReference ?: error("No name argument found")
-                val name = field.symbol.owner.name
-                val expression = call.arguments[2] ?: error("No expression argument found")
-                name to expression
+                val callName = call.symbol.owner.name
+                val field = call.arguments.getOrNull(1) as? IrPropertyReference ?: error("No name argument found")
+                val fieldName = field.symbol.owner.name
+                when (callName.identifier) {
+                    "map" -> fieldName to call.arguments.getOrNull(2)
+                    "ignore" -> fieldName to null
+                    else -> error("Unknown mapping type: $callName")
+                }
             }
 
         val toTypeArgument = expression.typeArguments[0] ?: error("Could not resolve target type for mapper")
         val fromTypeArgument = expression.typeArguments[1] ?: error("Could not resolve source type for mapper")
 
-
         val remapper = object : IrElementTransformerVoid() {
             override fun visitGetValue(expression: IrGetValue): IrExpression {
-                val e = super.visitGetValue(expression)
+                val transformedGetValue = super.visitGetValue(expression)
                 val itParamSymbol = callArgument?.function?.parameters
                     ?.firstOrNull { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }
                     ?.symbol
                 if (expression.symbol == itParamSymbol) {
-                    // Replace the lambda parameter reference with a fresh copy of the receiver expression
-                    // to avoid reusing the same IR node in multiple parents (IR validation error).
                     return receiverArgument.deepCopyWithSymbols()
                 }
-                return e
+                return transformedGetValue
             }
         }
 
@@ -93,47 +92,44 @@ class KMapperIrBuildMapperVisitor(
 
         val constructorCall = builder.irCallConstructor(toShape.constructor.symbol, emptyList()).apply {
             toShape.fields.onEachIndexed { index, field ->
-                val mappedValue = when {
-                    field in fromTypeArgument.readableProperties() -> builder.irGetPropertyByName(
-                        receiver = receiverArgument,
-                        propertyName = field.name
-                    )
 
-                    else -> definedMapping[field.name]
-                }
-                if (mappedValue == null) {
-                    val receiver = builder.irGetPropertyByName(receiver = receiverArgument, propertyName = field.name)
-                    if (field.type.makeNotNull().classOrNull?.owner?.kind == ClassKind.ENUM_CLASS) {
-                        val enumClass = field.type.makeNotNull().classOrNull!!.owner
-                        val valueOfFun = enumClass.declarations
-                            .filterIsInstance<IrSimpleFunction>()
-                            .first {
-                                it.name.asString() == "valueOf" &&
-                                    it.parameters.filter { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }.size == 1 &&
-                                    it.parameters.filter { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }[0].type.makeNotNull()
-                                        .isString()
-                            }
-                        val enumValue =
-                            builder.irGetPropertyByName(receiver = receiverArgument, propertyName = field.name)
-                        val nameValue =
-                            builder.irGetPropertyByName(receiver = enumValue, propertyName = Name.identifier("name"))
-                        arguments[index] = builder.irCall(valueOfFun.symbol).apply { arguments[0] = nameValue }
+                val mappedValue =
+                    if (mapping.containsKey(field.name)) {
+                        mapping[field.name] ?: toShape.constructor.defaultValue(index)
                     } else {
-                        arguments[index] =
-                            builder.recursiveConstructor(
-                                expression = receiver,
-                                toShape = field.type.convertShape(),
-                                fromShape = receiver.type.convertShape()
-                            )
+                        fromTypeArgument.readableProperties()
+                            .find { it == field }
+                            ?.let {
+                                builder.irGetPropertyByName(
+                                    receiver = receiverArgument,
+                                    propertyName = field.name
+                                )
+                            }
+                            ?: toShape.constructor.defaultValue(index)
                     }
-                } else {
-                    arguments[index] = mappedValue.transform(remapper, null)
-                }
+
+                collector.info("mappedValue: $mappedValue")
+                arguments[index] =
+                    if (mappedValue == null) {
+                        val receiver = builder.irGetPropertyByName(
+                            receiver = receiverArgument,
+                            propertyName = field.name
+                        ) ?: error("Could not resolve property ${field.name}")
+                        builder.construct(
+                            expression = receiver,
+                            toShape = field.type.convertShape(),
+                            fromShape = receiver.type.convertShape()
+                        )
+                    } else {
+                        mappedValue.transform(remapper, null)
+                    }
             }
         }
 
         return constructorCall
     }
+
+    private fun IrConstructor.defaultValue(index: Int) = parameters[index].defaultValue?.expression
 
     private fun IrType.convertShape(): Shape {
         val typeArgumentClass = classOrNull?.owner ?: error("Could not resolve target class for mapper")
@@ -154,56 +150,54 @@ class KMapperIrBuildMapperVisitor(
             .map { prop -> Field(prop.name, prop.getter!!.returnType) }
     }
 
-    private fun IrBuilder.irGetPropertyByName(receiver: IrExpression, propertyName: Name): IrExpression {
+    private fun IrBuilder.irGetPropertyByName(receiver: IrExpression, propertyName: Name): IrExpression? {
         val receiverClass = receiver.type.classOrNull?.owner
             ?: error("Receiver type has no class owner for property $propertyName")
 
-        val property: IrProperty = receiverClass.declarations
+        val property = receiverClass.declarations
             .filterIsInstance<IrProperty>()
             .firstOrNull { it.name == propertyName }
-            ?: error("Property '$propertyName' not found on ${receiverClass.name} receiver ${receiver.dumpKotlinLike()}")
+            ?.getter
 
-        val getter = property.getter
-            ?: error("Property '$propertyName' has no getter")
-
-        return irCall(getter.symbol).apply {
-            dispatchReceiver = receiver
-        }
+        return property?.symbol
+            ?.let {
+                irCall(it).apply {
+                    dispatchReceiver = receiver
+                }
+            }
     }
 
-    private fun IrBuilder.recursiveConstructor(
+    private fun IrBuilder.construct(
         expression: IrExpression,
         toShape: Shape,
         fromShape: Shape
     ): IrExpression =
+
         // Construct Enum Class
         if (toShape.isEnum() && fromShape.isEnum()) {
             val valueOfFun = toShape.type.makeNotNull()
                 .classOrNull?.owner?.declarations
                 ?.filterIsInstance<IrSimpleFunction>()
-                ?.firstOrNull {
-                    it.name.asString() == "valueOf" &&
-                        it.parameters.filter { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }.size == 1 &&
-                        it.parameters.filter { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }[0].type.makeNotNull()
-                            .isString()
-                }
+                ?.firstOrNull { it.name.asString() == "valueOf" }
                 ?: error("No valueOf function found for enum")
             val nameValue = irGetPropertyByName(receiver = expression, propertyName = Name.identifier("name"))
             irCall(valueOfFun.symbol).apply { arguments[0] = nameValue }
-        // Construct Data Class
+
+            // Construct Data Class
         } else {
             irCallConstructor(toShape.constructor.symbol, emptyList()).apply {
+                collector.info("Mapping constructor: ${toShape}")
                 toShape.fields.onEachIndexed { index, (name, type) ->
-                    val property = irGetPropertyByName(expression, name)
-                    if (type.makeNotNull().run { isPrimitiveType() || isString() }) {
-                        arguments[index] = property
-                    } else {
-                        arguments[index] = recursiveConstructor(
-                            property,
-                            toShape = toShape.fields[index].type.convertShape(),
-                            fromShape = fromShape.fields[index].type.convertShape()
-                        )
-                    }
+                    val property = irGetPropertyByName(expression, name) ?: error("Could not resolve property $name")
+                    arguments[index] =
+                        when {
+                            type.run { isPrimitiveType() || isString() } -> property
+                            else -> construct(
+                                property,
+                                toShape = toShape.fields[index].type.convertShape(),
+                                fromShape = fromShape.fields[index].type.convertShape()
+                            )
+                        }
                 }
             }
         }

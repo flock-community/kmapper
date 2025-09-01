@@ -10,23 +10,33 @@ import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
+import org.jetbrains.kotlin.fir.types.isMarkedNullable
 import org.jetbrains.kotlin.fir.types.isPrimitive
 import org.jetbrains.kotlin.name.Name
 
 data class Field(
     val name: Name,
     val type: ConeKotlinType,
+    val hasDefaultValue: Boolean,
     val fields: List<Field>
 )
 
 context(session: FirSession, collector: MessageCollector)
 infix fun Field.deepEqual(other: Field): Boolean =
     name == other.name &&
+        nullableEqual(this, other) &&
         (primaryEqual(this, other) || enumsEqual(this, other) || fieldsEqual(this, other))
 
+context(session: FirSession, collector: MessageCollector)
+private fun nullableEqual(to: Field, from: Field): Boolean {
+    if (to.type.isMarkedNullable && !from.type.isMarkedNullable) return true
+    return to.type.isMarkedNullable == from.type.isMarkedNullable
+}
 
 private fun primaryEqual(to: Field, from: Field): Boolean {
     if (!to.type.isPrimitive || !from.type.isPrimitive) return false
+    if (to.type.isMarkedNullable != from.type.isMarkedNullable) return false
+    if (to.type.isMarkedNullable != from.type.isMarkedNullable) return false
     return to.type == from.type
 }
 
