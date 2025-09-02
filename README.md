@@ -79,7 +79,7 @@ fun main() {
         to::name map "${it.firstName} ${it.lastName}"
         to::active.ignore()
     }
-    println(userDto) // Output: UserDto(name=John Doe, age=99)
+    println(userDto) // Output: UserDto(name=John Doe, age=99, active=false)
 }
 ```
 
@@ -99,7 +99,7 @@ data class UserDto (val name: String, val status: StatusDto)
 fun main() {
     val user = Source(name = "John Doe", status = SourceStatus.ACTIVE)
     val dto: UserDto = user.mapper { }
-    println(dto) // UserDto(name=John Doe, status=ACTIVE, active=false)
+    println(dto) // UserDto(name=John Doe, status=ACTIVE)
 }
 ```
 
