@@ -99,7 +99,7 @@ data class UserDto (val name: String, val status: StatusDto)
 fun main() {
     val user = Source(name = "John Doe", status = SourceStatus.ACTIVE)
     val dto: UserDto = user.mapper { }
-    println(dto) // UserDto(name=John Doe, status=ACTIVE)
+    println(dto) // UserDto(name=John Doe, status=ACTIVE, active=false)
 }
 ```
 
