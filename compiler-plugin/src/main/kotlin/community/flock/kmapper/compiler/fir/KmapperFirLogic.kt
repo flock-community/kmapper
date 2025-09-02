@@ -14,6 +14,11 @@ import org.jetbrains.kotlin.fir.types.isMarkedNullable
 import org.jetbrains.kotlin.fir.types.isPrimitive
 import org.jetbrains.kotlin.name.Name
 
+data class Mapping(
+    val to: Field,
+    val from: Field
+)
+
 data class Field(
     val name: Name,
     val type: ConeKotlinType,
@@ -22,18 +27,18 @@ data class Field(
 )
 
 context(session: FirSession, collector: MessageCollector)
-infix fun Field.deepEqual(other: Field): Boolean =
-    name == other.name &&
-        nullableEqual(this, other) &&
-        (primaryEqual(this, other) || enumsEqual(this, other) || fieldsEqual(this, other))
+fun Mapping.deepEqual(): Boolean =
+    from.name == to.name &&
+        nullableEqual() &&
+        (primaryEqual() || enumsEqual() || fieldsEqual())
 
 context(session: FirSession, collector: MessageCollector)
-private fun nullableEqual(to: Field, from: Field): Boolean {
+private fun Mapping.nullableEqual(): Boolean {
     if (to.type.isMarkedNullable && !from.type.isMarkedNullable) return true
     return to.type.isMarkedNullable == from.type.isMarkedNullable
 }
 
-private fun primaryEqual(to: Field, from: Field): Boolean {
+private fun Mapping.primaryEqual(): Boolean {
     if (!to.type.isPrimitive || !from.type.isPrimitive) return false
     if (to.type.isMarkedNullable != from.type.isMarkedNullable) return false
     if (to.type.isMarkedNullable != from.type.isMarkedNullable) return false
@@ -41,7 +46,7 @@ private fun primaryEqual(to: Field, from: Field): Boolean {
 }
 
 context(session: FirSession, collector: MessageCollector)
-private fun enumsEqual(to: Field, from: Field): Boolean {
+private fun Mapping.enumsEqual(): Boolean {
     val toEntries =
         to.type.toRegularClassSymbol(session)?.takeIf { it.isEnumClass }?.enumEntryNames()?.toSet() ?: return false
     val fromEntries = from.type.toRegularClassSymbol(session)?.takeIf { it.isEnumClass }?.enumEntryNames()?.toSet()
@@ -50,11 +55,11 @@ private fun enumsEqual(to: Field, from: Field): Boolean {
 }
 
 context(session: FirSession, collector: MessageCollector)
-private fun fieldsEqual(to: Field, from: Field): Boolean {
+private fun Mapping.fieldsEqual(): Boolean {
     if (to.type.isPrimitive || from.type.isPrimitive) return false
     if (to.type.toRegularClassSymbol(session)?.isClass == false) return false
     if (from.type.toRegularClassSymbol(session)?.isClass == false) return false
-    return from.fields.zip(to.fields).all { (a, b) -> a deepEqual b }
+    return from.fields.zip(to.fields).all { _ -> deepEqual() }
 }
 
 @OptIn(DirectDeclarationsAccess::class, SymbolInternals::class)

@@ -1,4 +1,5 @@
 import community.flock.kmapper.compiler.fir.Field
+import community.flock.kmapper.compiler.fir.Mapping
 import community.flock.kmapper.compiler.fir.deepEqual
 import community.flock.kmapper.compiler.util.Diagnostics
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -37,7 +38,6 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
         val kMapperAnnotation = FqName("community.flock.kmapper.KMapper")
     }
 
-
     context(context: CheckerContext, reporter: DiagnosticReporter)
     override fun check(expression: FirCall) = context(session, collector) {
 
@@ -62,7 +62,7 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
             ?.extractConstructorFields()
             ?: return
 
-        val mapping = function.arguments.firstOrNull().let { it as? FirAnonymousFunctionExpression }
+        val mapping:List<Field> = function.arguments.firstOrNull().let { it as? FirAnonymousFunctionExpression }
             ?.let { arg ->
                 arg.anonymousFunction.body
                     ?.statements?.filterIsInstance<FirFunctionCall>()
@@ -86,9 +86,9 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
             ?: emptyList()
 
         val diff = toFields
-            .filterNot { to -> mapping.any { mapping -> to deepEqual mapping } }
-            .filterNot { to -> fromFields.any { from -> to deepEqual from } }
-            .filterNot { to -> to.hasDefaultValue }
+            .filterNot { to ->
+                (fromFields + mapping).any { from -> Mapping(to, from).deepEqual() } || to.hasDefaultValue
+            }
 
         val missingParameterNames = diff.joinToString(", ") { it.name.asString() }
 
