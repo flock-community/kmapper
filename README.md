@@ -40,6 +40,55 @@ repositories {
 }
 ```
 
+### Using Maven
+
+Load the KMapper Maven integration by adding it as a dependency of kotlin-maven-plugin. The extension will:
+- Auto-register the KMapper Kotlin compiler plugin (transitively on the plugin classpath)
+- Ensure the runtime library (compiler-runtime) is on your project compile classpath
+
+Kotlin version used/tested: 2.2.20-RC.
+
+Minimal setup:
+
+```xml
+
+<dependencies>
+  <dependency>
+      <groupId>community.flock.kmapper</groupId>
+      <artifactId>compiler-runtime</artifactId>
+      <version>0.0.0-SNAPSHOT</version>
+  </dependency>
+</dependencies>
+
+```
+
+```xml
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-maven-plugin</artifactId>
+      <version>2.2.20-RC</version>
+        ...(other plugin configuration)
+      <dependencies>
+        <dependency>
+          <groupId>community.flock.kmapper</groupId>
+          <artifactId>compiler-plugin</artifactId>
+          <version>0.0.0-SNAPSHOT</version>
+        </dependency>
+      </dependencies>
+    </plugin>
+  </plugins>
+</build>
+```
+
+
+Troubleshooting:
+- Ensure kotlin-maven-plugin version is 2.2.20-RC (matching our tested Kotlin version).
+- Make sure the KMapper maven-plugin dependency is placed under kotlin-maven-plugin’s <dependencies> (not in the project <dependencies> section).
+- In multi-module builds, add the kotlin-maven-plugin configuration in each module that compiles Kotlin (you can use <pluginManagement> in the parent for reuse).
+- You can set a property <kmapper.version>0.0.0-SNAPSHOT</kmapper.version> and the extension will use it to resolve the runtime version if needed.
+
 ## Usage
 
 ### Basic Example
