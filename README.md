@@ -28,15 +28,23 @@ KMapper is a Kotlin compiler plugin that provides code generation capabilities f
 
 Add the plugin to your project's `build.gradle.kts`:
 
+build.gradle.kts
 ```kotlin
 plugins {
     kotlin("jvm") version "2.2.20-RC"
     id("community.flock.kmapper") version "0.0.0-SNAPSHOT"
 }
+```
 
-repositories {
-    mavenCentral()
-    maven(url="https://central.sonatype.com/repository/maven-snapshots/")
+settings.gradle.kts
+```kotlin
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        mavenLocal()
+//        maven(url="https://central.sonatype.com/repository/maven-snapshots/")
+    }
 }
 ```
 
