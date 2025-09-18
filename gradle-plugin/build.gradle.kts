@@ -7,6 +7,10 @@ plugins {
     signing
 }
 
+java {
+    withSourcesJar()
+}
+
 version = rootProject.version
 group = rootProject.group
 
