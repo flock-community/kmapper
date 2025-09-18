@@ -28,6 +28,9 @@ jobs:
         
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
+
+    - name: Build and test
+      run: ./gradlew build
       
     - name: Set version from input
       if: github.event_name == 'workflow_dispatch'
@@ -40,10 +43,7 @@ jobs:
       run: |
         echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
         sed -i 's/version = ".*"/version = "${{ github.event.release.tag_name }}"/' build.gradle.kts
-        
-    - name: Build and test
-      run: ./gradlew build
-      
+
     - name: Publish to Maven Central
       env:
         SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
