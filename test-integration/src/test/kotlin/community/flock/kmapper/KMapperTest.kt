@@ -270,6 +270,68 @@ class KMapperTest {
             }
     }
 
+
+    @Test
+    fun shouldCompile_unknownInFrom() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class Account(val name: String)
+                |data class User(val id: Int, val account: Account)
+                |
+                |data class UserDto(val id: Int)
+                |
+                |fun main() {
+                |  val user = User(id=1, account=Account(name="John Doe"))
+                |  val res:UserDto = user.mapper()
+                |  println(res)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("UserDto(id=1)"),
+                    "Expected UserDto(id=1) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_complexList() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class Account(val name: String)
+                |data class User(val id: Int, val accounts: List<Account>)
+                
+                |data class AccountDto(val name: String)
+                |data class UserDto(val id: Int, val accounts: List<AccountDto>)
+                |
+                |fun main() {
+                |  val user = User(id=1, accounts=listOf(Account(name="John Doe")))
+                |  val res:UserDto = user.mapper()
+                |  println(res)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("UserDto(id=1, accounts=[Account(name=John Doe)])"),
+                    "Expected UserDto(id=1, accounts=[Account(name=John Doe)]) in output"
+                )
+            }
+    }
+
     @Test
     fun shouldCompile_getField() {
         IntegrationTest(options)

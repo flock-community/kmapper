@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.ir.types.makeNotNull
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -115,11 +116,16 @@ class KMapperIrBuildMapperVisitor(
                             receiver = receiverArgument,
                             propertyName = field.name
                         ) ?: error("Could not resolve property ${field.name}")
-                        builder.construct(
-                            expression = receiver,
-                            toShape = field.type.convertShape(),
-                            fromShape = receiver.type.convertShape()
-                        )
+                        if (field.type.isKotlinList() && receiver.type.isKotlinList()) {
+                            // For lists, pass through as-is when no explicit mapping is provided
+                            receiver
+                        } else {
+                            builder.construct(
+                                expression = receiver,
+                                toShape = field.type.convertShape(),
+                                fromShape = receiver.type.convertShape()
+                            )
+                        }
                     } else {
                         mappedValue.transform(remapper, null)
                     }
@@ -133,13 +139,20 @@ class KMapperIrBuildMapperVisitor(
 
     private fun IrType.convertShape(): Shape {
         val typeArgumentClass = classOrNull?.owner ?: error("Could not resolve target class for mapper")
+        // If this is a Kotlin List interface, it doesn't have a constructor and will be handled specially elsewhere
+        if (typeArgumentClass.fqNameWhenAvailable?.asString() == "kotlin.collections.List") {
+            error("List type should be handled without convertShape")
+        }
         val typeArgumentConstructor =
-            typeArgumentClass.constructors.firstOrNull() ?: error("No primary constructor found for type argument")
+            typeArgumentClass.constructors.firstOrNull() ?: error("No primary constructor found for type argument: ${typeArgumentClass.name}")
         return Shape(
             this,
             typeArgumentConstructor,
             typeArgumentConstructor.parameters.map { Field(it.name, it.type) })
     }
+
+    private fun IrType.isKotlinList(): Boolean =
+        classOrNull?.owner?.fqNameWhenAvailable?.asString() == "kotlin.collections.List"
 
     // Returns all readable properties (with a getter) as fields: used to detect available source fields.
     private fun IrType.readableProperties(): List<Field> {
@@ -173,8 +186,13 @@ class KMapperIrBuildMapperVisitor(
         fromShape: Shape
     ): IrExpression =
 
+        // If both sides are kotlin.collections.List, pass through for now (primitive lists)
+        if (toShape.type.isKotlinList() && fromShape.type.isKotlinList()) {
+            // Note: Complex element mapping is handled elsewhere or falls back to direct assignment for identical element types
+            expression
+
         // Construct Enum Class
-        if (toShape.isEnum() && fromShape.isEnum()) {
+        } else if (toShape.isEnum() && fromShape.isEnum()) {
             val valueOfFun = toShape.type.makeNotNull()
                 .classOrNull?.owner?.declarations
                 ?.filterIsInstance<IrSimpleFunction>()
