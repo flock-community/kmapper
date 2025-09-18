@@ -182,6 +182,62 @@ class KMapperTest {
     }
 
     @Test
+    fun shouldSuccess_stringLists() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class Person(val id: String, val skills: List<String>)
+                |data class PersonDto(val id: String, val skills: List<String>)
+                |
+                |fun main() {
+                |  val person = Person("1", listOf("Kotlin", "Spring"))
+                |  val personDto:PersonDto = person.mapper()
+                |  println(personDto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("PersonDto(id=1, skills=[Kotlin, Spring])"),
+                    "PersonDto(id=1, skills=[Kotlin, Spring])"
+                )
+            }
+    }
+
+    @Test
+    fun shouldFail_differentLists() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class Person(val id: String, val skills: List<String>)
+                |data class PersonDto(val id: String, val skills: List<Int>)
+                |
+                |fun main() {
+                |  val person = Person("1", listOf("Kotlin", "Spring"))
+                |  val personDto:PersonDto = person.mapper()
+                |  println(personDto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileFail { output ->
+                assertTrue(
+                    output.contains("Missing mapping for: skills."),
+                    "Missing mapping for: skills."
+                )
+            }
+    }
+
+    @Test
     fun shouldCompile_valueClass() {
         IntegrationTest(options)
             .file("App.kt") {
