@@ -18,7 +18,9 @@ import org.jetbrains.kotlin.fir.expressions.FirAnonymousFunctionExpression
 import org.jetbrains.kotlin.fir.expressions.FirCall
 import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
 import org.jetbrains.kotlin.fir.expressions.arguments
+import org.jetbrains.kotlin.fir.expressions.explicitReceiver
 import org.jetbrains.kotlin.fir.expressions.toReference
+import org.jetbrains.kotlin.fir.references.FirNamedReference
 import org.jetbrains.kotlin.fir.references.toResolvedBaseSymbol
 import org.jetbrains.kotlin.fir.references.toResolvedPropertySymbol
 import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
@@ -67,20 +69,33 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
                 arg.anonymousFunction.body
                     ?.statements?.filterIsInstance<FirFunctionCall>()
                     ?.mapNotNull { call ->
-                        call.extensionReceiver
-                            ?.toReference(session)
-                            ?.toResolvedPropertySymbol()
-                            ?.let { receiver ->
-                                call.arguments.firstOrNull()?.let { arg ->
+                        val functionName = (call.calleeReference as? FirNamedReference)?.name?.asString()
+                        when (functionName) {
+                            "mapAssign" -> {
+                                val propSymbol = call.explicitReceiver
+                                    ?.toReference(session)
+                                    ?.toResolvedPropertySymbol()
+                                val valueExpr = call.arguments.firstOrNull()
+                                if (propSymbol != null && valueExpr != null) {
                                     Field(
-                                        name = receiver.name,
-                                        type = arg.resolvedType,
+                                        name = propSymbol.name,
+                                        type = valueExpr.resolvedType,
                                         hasDefaultValue = false,
-                                        fields = arg.resolvedType.resolveConstructorFields()
+                                        fields = valueExpr.resolvedType.resolveConstructorFields()
                                     )
-                                }
+                                } else null
                             }
-
+                            "ignore" -> {
+                                val propSymbol = call.extensionReceiver
+                                    ?.toReference(session)
+                                    ?.toResolvedPropertySymbol()
+                                if (propSymbol != null) {
+                                    // Find the matching toField to include its type info
+                                    toFields.find { it.name == propSymbol.name }
+                                } else null
+                            }
+                            else -> null
+                        }
                     }
             }
             ?: emptyList()
