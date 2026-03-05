@@ -19,7 +19,6 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
-import org.jetbrains.kotlin.ir.expressions.IrPropertyReference
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isPrimitiveType
@@ -63,13 +62,36 @@ class KMapperIrBuildMapperVisitor(
             ?.body.let { it as? IrBlockBody }
             ?.statements?.filterIsInstance<IrCall>().orEmpty()
             .associate { call ->
-                val callName = call.symbol.owner.name
-                val field = call.arguments.getOrNull(1) as? IrPropertyReference ?: error("No name argument found")
-                val fieldName = field.symbol.owner.name
-                when (callName.identifier) {
-                    "map" -> fieldName to call.arguments.getOrNull(2)
-                    "ignore" -> fieldName to null
-                    else -> error("Unknown mapping type: $callName")
+                val functionName = call.symbol.owner.name.identifier
+                when (functionName) {
+                    "mapAssign" -> {
+                        // Find the extension receiver index in the function's parameters
+                        val extReceiverIndex = call.symbol.owner.parameters
+                            .indexOfFirst { it.kind == IrParameterKind.ExtensionReceiver }
+                            .takeIf { it >= 0 } ?: error("mapAssign must have an extension receiver parameter")
+                        val getterCall = call.arguments[extReceiverIndex] as? IrCall
+                            ?: error("mapAssign receiver must be a property getter call")
+                        val fieldName = getterCall.symbol.owner.correspondingPropertySymbol?.owner?.name
+                            ?: error("Cannot extract property name from mapAssign receiver")
+                        // The value argument is the first Regular parameter
+                        val valueIndex = call.symbol.owner.parameters
+                            .indexOfFirst { it.kind == IrParameterKind.Regular }
+                            .takeIf { it >= 0 } ?: error("mapAssign must have a value parameter")
+                        val valueExpr = call.arguments[valueIndex]
+                        fieldName to valueExpr
+                    }
+                    "ignore" -> {
+                        // Find the extension receiver index in the function's parameters
+                        val extReceiverIndex = call.symbol.owner.parameters
+                            .indexOfFirst { it.kind == IrParameterKind.ExtensionReceiver }
+                            .takeIf { it >= 0 } ?: error("ignore must have an extension receiver parameter")
+                        val getterCall = call.arguments[extReceiverIndex] as? IrCall
+                            ?: error("ignore receiver must be a property getter call")
+                        val fieldName = getterCall.symbol.owner.correspondingPropertySymbol?.owner?.name
+                            ?: error("Cannot extract property name from ignore receiver")
+                        fieldName to null
+                    }
+                    else -> error("Unknown mapping type in mapper lambda: $functionName")
                 }
             }
 
