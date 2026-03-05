@@ -17,6 +17,7 @@ class KMapperTest {
                 |package sample
                 |
                 |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.mapAssign
                 |
                 |data class User(val firstName: String, val lastName: String, val age: Int)
                 |data class Id(val id: Int)
@@ -25,7 +26,7 @@ class KMapperTest {
                 |fun main() {
                 |  val user = User("John", "Doe", 99)
                 |  val userDto:UserDto = user.mapper {
-                |    to::name map "${it.firstName} ${user.lastName}"
+                |    name = "${it.firstName} ${user.lastName}"
                 |  }
                 |  println(userDto)
                 |}
@@ -76,6 +77,7 @@ class KMapperTest {
                 |package sample
                 |
                 |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.mapAssign
                 |
                 |data class Person(val firstName: String, val lastName: String, val age: Int, val address:  Address)
                 |data class Address(val street: String, val city: String, val zipCode: String)
@@ -91,7 +93,7 @@ class KMapperTest {
                 |        address = Address("Main Street", "Hamburg", "22049")
                 |    )
                 |    val res: PersonDto = user.mapper {
-                |        to::name map "${it.firstName} ${it.lastName}"
+                |        name = "${it.firstName} ${it.lastName}"
                 |    }
                 |    println(res)
                 |}
@@ -118,6 +120,7 @@ class KMapperTest {
                 |package sample
                 |
                 |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.mapAssign
                 |
                 |data class Person(val firstName: String, val lastName: String, val age: Int, val address:  Address)
                 |data class Address(val streetCity: StreetCity, val zipCode: String)
@@ -135,7 +138,7 @@ class KMapperTest {
                 |        address = Address(StreetCity("Main Street", "Hamburg"), "22049")
                 |    )
                 |    val res: PersonDto = user.mapper {
-                |        to::name map "${it.firstName} ${it.lastName}"
+                |        name = "${it.firstName} ${it.lastName}"
                 |    }
                 |    println(res)
                 |}
@@ -159,6 +162,7 @@ class KMapperTest {
                 |package sample
                 |
                 |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.mapAssign
                 |
                 |data class User(val firstName: String, val lastName: String)
                 |data class Id(val id: Int)
@@ -167,7 +171,7 @@ class KMapperTest {
                 |fun main() {
                 |  val user = User("John", "Doe")
                 |  val userDto:UserDto = user.mapper {
-                |    to::name map "${user.firstName} ${user.lastName}"
+                |    name = "${user.firstName} ${user.lastName}"
                 |  }
                 |}
                 |
@@ -619,6 +623,7 @@ class KMapperTest {
                 |package sample
                 |
                 |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.mapAssign
                 |
                 |data class Person(val firstName: String)
                 |data class PersonDto(val firstName: String, val lastName: String?)
@@ -626,7 +631,7 @@ class KMapperTest {
                 |fun main() {
                 |  val person = Person(firstName="John")
                 |  val dto:PersonDto = person.mapper{
-                |    to::lastName map null
+                |    lastName = null
                 |  }
                 |  println(dto)
                 |}
@@ -677,6 +682,7 @@ class KMapperTest {
                 |package sample
                 |
                 |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.mapAssign
                 |
                 |data class Person(val firstName: String)
                 |data class PersonDto(val firstName: String)
@@ -684,7 +690,7 @@ class KMapperTest {
                 |fun main() {
                 |  val person = Person(firstName="John")
                 |  val dto:PersonDto = person.mapper {
-                |    to::firstName map "HELLO"
+                |    firstName = "HELLO"
                 |  }
                 |  println(dto)
                 |}
@@ -707,6 +713,7 @@ class KMapperTest {
                 |package sample
                 |
                 |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.ignore
                 |
                 |data class Person(val firstName: String)
                 |data class PersonDto(val firstName: String = "HELLO")
@@ -714,7 +721,7 @@ class KMapperTest {
                 |fun main() {
                 |  val person = Person(firstName="John")
                 |  val dto:PersonDto = person.mapper {
-                |    to::firstName.ignore()
+                |    firstName.ignore()
                 |  }
                 |  println(dto)
                 |}
