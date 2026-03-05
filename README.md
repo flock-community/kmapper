@@ -11,7 +11,7 @@ KMapper is a Kotlin compiler plugin that provides code generation capabilities f
 ## Features
 
 - **Kotlin 2.0+ Support**: Built with K2 compiler support (Kotlin 2.2.20-RC)
-- **Fluent DSL**: Intuitive mapping syntax with `to::property map value`
+- **Fluent DSL**: Intuitive assignment-based mapping syntax with `property = value`
 - **Compile-time Validation**: Ensures all required constructor parameters are mapped
 - **IR-Based Generation**: Uses Kotlin's IR (Intermediate Representation) for robust code generation
 - **Symmetric Enum Mapping**: When source and target enum entries share the same names, the plugin automatically maps them without additional configuration
@@ -101,10 +101,12 @@ Troubleshooting:
 
 ### Basic Example
 
-1. Import the mapper function:
+1. Import the mapper functions:
 
 ```kotlin
 import community.flock.kmapper.mapper
+import community.flock.kmapper.mapAssign
+import community.flock.kmapper.ignore
 ```
 
 2. Define your data classes:
@@ -132,9 +134,9 @@ data class UserDto(
 fun main() {
     val user = User("John", "Doe", 99, true)
     val userDto: UserDto = user.mapper {
-        to::age map it.age.toString()
-        to::name map "${it.firstName} ${it.lastName}"
-        to::active.ignore()
+        age = it.age.toString()
+        name = "${it.firstName} ${it.lastName}"
+        active.ignore()
     }
     println(userDto) // Output: UserDto(name=John Doe, age=99, active=false)
 }
@@ -168,7 +170,7 @@ The plugin automatically generates the mapping implementation at compile time, r
 
 Notes:
 - Symmetric enum mapping triggers when the target constructor parameter type is an enum and there is a source value of another enum with the same entry names.
-- If names differ or you need custom mapping, you can still provide an explicit mapping expression: `to::status map when(it.status){ SourceStatus.NEW -> TargetStatus.NEW /* ... */ }`.
+- If names differ or you need custom mapping, you can still provide an explicit mapping expression: `status = when(it.status){ SourceStatus.NEW -> TargetStatus.NEW /* ... */ }`.
 
 ### IDE Support
 The K2 Kotlin IntelliJ plugin supports running third party FIR plugins in the IDE, but this feature is hidden behind a flag.
