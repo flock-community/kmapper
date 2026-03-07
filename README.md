@@ -105,7 +105,6 @@ Troubleshooting:
 
 ```kotlin
 import community.flock.kmapper.mapper
-import community.flock.kmapper.mapAssign
 import community.flock.kmapper.ignore
 ```
 
@@ -121,9 +120,9 @@ data class User(
 )
 
 data class UserDto(
-    val id: Int, 
-    val name: String, 
-    val age: Sting, 
+    val id: Int,
+    val name: String,
+    val age: String,
     val active: Boolean = false
 )
 ```
@@ -132,7 +131,7 @@ data class UserDto(
 
 ```kotlin
 fun main() {
-    val user = User("John", "Doe", 99, true)
+    val user = User(1, "John", "Doe", 99, true)
     val userDto: UserDto = user.mapper {
         age = it.age.toString()
         name = "${it.firstName} ${it.lastName}"
@@ -156,10 +155,110 @@ enum class StatusDto { NEW, ACTIVE, SUSPENDED }
 data class UserDto (val name: String, val status: StatusDto)
 
 fun main() {
-    val user = Source(name = "John Doe", status = SourceStatus.ACTIVE)
+    val user = User(name = "John Doe", status = Status.ACTIVE)
     val dto: UserDto = user.mapper { }
     println(dto) // UserDto(name=John Doe, status=ACTIVE)
 }
+```
+
+### Auto-Mapping Identical Classes
+
+When source and target classes share the same property names and types, no lambda is needed:
+
+```kotlin
+data class User(val id: Int, val name: String, val age: Int)
+data class UserDto(val id: Int, val name: String, val age: Int)
+
+val user = User(id = 1, name = "John Doe", age = 99)
+val dto: UserDto = user.mapper()
+```
+
+### Nested Object Mapping
+
+KMapper automatically maps nested data classes when their properties match:
+
+```kotlin
+data class Address(val street: String, val city: String)
+data class Person(val name: String, val address: Address)
+
+data class AddressDto(val street: String, val city: String)
+data class PersonDto(val name: String, val address: AddressDto)
+
+val person = Person("John Doe", Address("Main Street", "Hamburg"))
+val dto: PersonDto = person.mapper()
+// PersonDto(name=John Doe, address=AddressDto(street=Main Street, city=Hamburg))
+```
+
+### Value Class Mapping
+
+Value classes are supported when the source and target value classes wrap the same type:
+
+```kotlin
+@JvmInline value class Id(val id: Int)
+data class User(val id: Id, val name: String)
+
+@JvmInline value class IdDto(val id: Int)
+data class UserDto(val id: IdDto, val name: String)
+
+val user = User(id = Id(1), name = "John Doe")
+val dto: UserDto = user.mapper()
+// UserDto(id=IdDto(id=1), name=John Doe)
+```
+
+### List Mapping
+
+Lists of primitives are mapped automatically when types match. Lists of data classes are mapped recursively:
+
+```kotlin
+data class Account(val name: String)
+data class User(val id: Int, val accounts: List<Account>)
+
+data class AccountDto(val name: String)
+data class UserDto(val id: Int, val accounts: List<AccountDto>)
+
+val user = User(id = 1, accounts = listOf(Account("John Doe")))
+val dto: UserDto = user.mapper()
+// UserDto(id=1, accounts=[Account(name=John Doe)])
+```
+
+### Nullable Fields
+
+KMapper handles nullability: a non-nullable source can map to a nullable target, but not the other way around. Nullable targets without a matching source can be explicitly set:
+
+```kotlin
+data class Person(val firstName: String)
+data class PersonDto(val firstName: String, val lastName: String?)
+
+val dto: PersonDto = Person("John").mapper {
+    lastName = null
+}
+// PersonDto(firstName=John, lastName=null)
+```
+
+### Default Values
+
+Target parameters with default values don't require a mapping when no matching source property exists:
+
+```kotlin
+data class Person(val firstName: String)
+data class PersonDto(val firstName: String, val lastName: String = "Doe")
+
+val dto: PersonDto = Person("John").mapper()
+// PersonDto(firstName=John, lastName=Doe)
+```
+
+### Ignoring Fields
+
+Use `ignore()` to skip auto-mapping for a field, falling back to its default value:
+
+```kotlin
+data class Person(val firstName: String)
+data class PersonDto(val firstName: String = "HELLO")
+
+val dto: PersonDto = Person("John").mapper {
+    firstName.ignore()
+}
+// PersonDto(firstName=HELLO)
 ```
 
 ### Generated Code
