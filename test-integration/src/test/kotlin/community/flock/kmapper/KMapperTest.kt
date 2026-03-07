@@ -707,6 +707,7 @@ class KMapperTest {
                 |package sample
                 |
                 |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.ignore
                 |
                 |data class Person(val firstName: String)
                 |data class PersonDto(val firstName: String = "HELLO")
