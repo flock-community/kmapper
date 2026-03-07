@@ -2,10 +2,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "2.2.20-RC"
+    kotlin("jvm") version "2.3.10"
     id("maven-publish")
     id("org.jetbrains.dokka")
-    id("com.gradleup.kctf").version("2.2.20-RC-0.0.1-SNAPSHOT-1424b19d1cb13443bc979332d1104333061ca5fd")
+    id("com.gradleup.kctf").version("2.3.10-0.0.2-SNAPSHOT-a524b7d38d0ad625c3b891df859cc0be4b9c339b")
     signing
 }
 
@@ -22,7 +22,7 @@ val kMapperRuntimeClasspath: Configuration by configurations.creating {
 
 dependencies {
     compileOnly(kotlin("compiler-embeddable"))
-    testImplementation("com.gradleup.kctf:kctf-runtime:2.2.20-RC-0.0.1-SNAPSHOT-1424b19d1cb13443bc979332d1104333061ca5fd")
+    testImplementation("com.gradleup.kctf:kctf-runtime:2.3.10-0.0.2-SNAPSHOT-a524b7d38d0ad625c3b891df859cc0be4b9c339b")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation(project(":compiler-runtime"))
     add(kMapperRuntimeClasspath.name, project(":compiler-runtime"))

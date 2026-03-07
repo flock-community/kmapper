@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 class KMapperTest {
 
     val options = IntegrationTest.Options(
-        kotlinVersion = "2.2.20-RC",
+        kotlinVersion = "2.3.10",
     )
 
     @Test
@@ -16,8 +16,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
-                |import community.flock.kmapper.mapAssign
+                |import community.flock.kmapper.*
                 |
                 |data class User(val firstName: String, val lastName: String, val age: Int)
                 |data class Id(val id: Int)
@@ -48,7 +47,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |data class User(val id: Int, val name: String, val age: Int)
                 |data class UserDto(val id: Int, val name: String, val age: Int)
@@ -76,8 +75,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
-                |import community.flock.kmapper.mapAssign
+                |import community.flock.kmapper.*
                 |
                 |data class Person(val firstName: String, val lastName: String, val age: Int, val address:  Address)
                 |data class Address(val street: String, val city: String, val zipCode: String)
@@ -119,8 +117,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
-                |import community.flock.kmapper.mapAssign
+                |import community.flock.kmapper.*
                 |
                 |data class Person(val firstName: String, val lastName: String, val age: Int, val address:  Address)
                 |data class Address(val streetCity: StreetCity, val zipCode: String)
@@ -161,8 +158,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
-                |import community.flock.kmapper.mapAssign
+                |import community.flock.kmapper.*
                 |
                 |data class User(val firstName: String, val lastName: String)
                 |data class Id(val id: Int)
@@ -192,7 +188,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |data class Person(val id: String, val skills: List<String>)
                 |data class PersonDto(val id: String, val skills: List<String>)
@@ -220,7 +216,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |data class Person(val id: String, val skills: List<String>)
                 |data class PersonDto(val id: String, val skills: List<Int>)
@@ -248,7 +244,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |@JvmInline
                 |value class Id(val id: Int)
@@ -282,7 +278,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |data class Account(val name: String)
                 |data class User(val id: Int, val account: Account)
@@ -312,7 +308,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |data class Account(val name: String)
                 |data class User(val id: Int, val accounts: List<Account>)
@@ -343,7 +339,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |data class User(val id: Int, val name: String) {
                 |   val age get() = 1
@@ -374,7 +370,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |data class User(val id: Int, val name: String, val age: Int = 99)
                 |
@@ -403,7 +399,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |@JvmInline
                 |value class Id(val id: Int)
@@ -434,7 +430,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |@JvmInline
                 |value class Id(val id: Int)
@@ -467,7 +463,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |enum class Gender { MALE, FEMALE }
                 |data class Address(val street: String, val city: String)
@@ -500,7 +496,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |enum class Gender { MALE, FEMALE }
                 |data class Address(val street: String, val city: String)
@@ -533,7 +529,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |enum class Status { OLD, NEW }
                 |data class Address(val street: String, val city: String, val status: Status)
@@ -566,7 +562,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |data class Person(val firstName: String, val lastName: String?)
                 |data class PersonDto(val firstName: String, val lastName: String)
@@ -594,7 +590,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |data class Person(val firstName: String, val lastName: String)
                 |data class PersonDto(val firstName: String, val lastName: String?)
@@ -622,8 +618,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
-                |import community.flock.kmapper.mapAssign
+                |import community.flock.kmapper.*
                 |
                 |data class Person(val firstName: String)
                 |data class PersonDto(val firstName: String, val lastName: String?)
@@ -653,7 +648,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
+                |import community.flock.kmapper.*
                 |
                 |data class Person(val firstName: String)
                 |data class PersonDto(val firstName: String, val lastName: String = "Doe")
@@ -681,8 +676,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
-                |import community.flock.kmapper.mapAssign
+                |import community.flock.kmapper.*
                 |
                 |data class Person(val firstName: String)
                 |data class PersonDto(val firstName: String)
@@ -712,8 +706,7 @@ class KMapperTest {
                 $$"""
                 |package sample
                 |
-                |import community.flock.kmapper.mapper
-                |import community.flock.kmapper.ignore
+                |import community.flock.kmapper.*
                 |
                 |data class Person(val firstName: String)
                 |data class PersonDto(val firstName: String = "HELLO")

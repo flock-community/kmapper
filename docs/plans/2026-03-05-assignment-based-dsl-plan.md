@@ -6,7 +6,7 @@
 
 **Architecture:** Make the target type (TO) the lambda receiver so properties resolve naturally. Use `FirAssignExpressionAltererExtension` to transform val-assignments into `__mapField()` marker calls. `FirCallChecker` validates completeness. IR extracts markers to build constructors.
 
-**Tech Stack:** Kotlin K2 Compiler Plugin APIs (FIR + IR), Kotlin 2.2.20-RC
+**Tech Stack:** Kotlin K2 Compiler Plugin APIs (FIR + IR), Kotlin 2.3.10
 
 **Design doc:** `docs/plans/2026-03-05-assignment-based-dsl-design.md`
 
@@ -115,7 +115,7 @@ class KMapperAssignAlterer(session: FirSession) : FirAssignExpressionAltererExte
         //    for examples of building FirFunctionCall in an alterer.
         //
         //    NOTE: This is the most experimental part. The exact builder API
-        //    needs to be verified against the Kotlin 2.2.20-RC compiler source.
+        //    needs to be verified against the Kotlin 2.3.10 compiler source.
         //    Start by examining FirAssignExpressionAltererExtension implementations
         //    in the Kotlin repo for the correct builder pattern.
 
@@ -516,7 +516,7 @@ git commit -m "docs: update README examples to assignment-based DSL syntax"
 
 This is the highest-risk task. Key uncertainties:
 
-1. **Does `FirAssignExpressionAltererExtension` exist in Kotlin 2.2.20-RC?** The Kotlin assign-plugin uses this API, but it may be internal. Verify by checking the compiler-embeddable classpath.
+1. **Does `FirAssignExpressionAltererExtension` exist in Kotlin 2.3.10?** The Kotlin assign-plugin uses this API, but it may be internal. Verify by checking the compiler-embeddable classpath.
 
 2. **Building FirFunctionCall:** The exact FIR builder API for constructing function calls programmatically needs to be learned from the Kotlin assign-plugin source. Reference: `kotlin/plugins/assign-plugin/assign-plugin-k2/`.
 

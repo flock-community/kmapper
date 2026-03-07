@@ -10,7 +10,7 @@ KMapper is a Kotlin compiler plugin that provides code generation capabilities f
 
 ## Features
 
-- **Kotlin 2.0+ Support**: Built with K2 compiler support (Kotlin 2.2.20-RC)
+- **Kotlin 2.0+ Support**: Built with K2 compiler support (Kotlin 2.3.10)
 - **Fluent DSL**: Intuitive assignment-based mapping syntax with `property = value`
 - **Compile-time Validation**: Ensures all required constructor parameters are mapped
 - **IR-Based Generation**: Uses Kotlin's IR (Intermediate Representation) for robust code generation
@@ -18,7 +18,7 @@ KMapper is a Kotlin compiler plugin that provides code generation capabilities f
 
 ## Requirements
 
-- Kotlin 2.2.20-RC or later
+- Kotlin 2.3.10 or later
 - JVM 17+
 - Gradle build system
 
@@ -31,7 +31,7 @@ Add the plugin to your project's `build.gradle.kts`:
 build.gradle.kts
 ```kotlin
 plugins {
-    kotlin("jvm") version "2.2.20-RC"
+    kotlin("jvm") version "2.3.10"
     id("community.flock.kmapper") version "0.0.0-SNAPSHOT"
 }
 ```
@@ -54,7 +54,7 @@ Load the KMapper Maven integration by adding it as a dependency of kotlin-maven-
 - Auto-register the KMapper Kotlin compiler plugin (transitively on the plugin classpath)
 - Ensure the runtime library (compiler-runtime) is on your project compile classpath
 
-Kotlin version used/tested: 2.2.20-RC.
+Kotlin version used/tested: 2.3.10.
 
 Minimal setup:
 
@@ -76,7 +76,7 @@ Minimal setup:
     <plugin>
       <groupId>org.jetbrains.kotlin</groupId>
       <artifactId>kotlin-maven-plugin</artifactId>
-      <version>2.2.20-RC</version>
+      <version>2.3.10</version>
         ...(other plugin configuration)
       <dependencies>
         <dependency>
@@ -92,7 +92,7 @@ Minimal setup:
 
 
 Troubleshooting:
-- Ensure kotlin-maven-plugin version is 2.2.20-RC (matching our tested Kotlin version).
+- Ensure kotlin-maven-plugin version is 2.3.10 (matching our tested Kotlin version).
 - Make sure the KMapper maven-plugin dependency is placed under kotlin-maven-plugin’s <dependencies> (not in the project <dependencies> section).
 - In multi-module builds, add the kotlin-maven-plugin configuration in each module that compiles Kotlin (you can use <pluginManagement> in the parent for reuse).
 - You can set a property <kmapper.version>0.0.0-SNAPSHOT</kmapper.version> and the extension will use it to resolve the runtime version if needed.
