@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
 
 @OptIn(ExperimentalCompilerApi::class)
 class KMapperCompilerPluginRegistrar : CompilerPluginRegistrar() {
+    override val pluginId: String = "community.flock.kmapper"
     override val supportsK2: Boolean = true
 
     override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {

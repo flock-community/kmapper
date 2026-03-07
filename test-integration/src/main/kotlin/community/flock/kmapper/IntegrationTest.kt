@@ -75,7 +75,7 @@ class IntegrationTest(options: Options) {
             """
             |plugins {
             |    id("community.flock.kmapper") version "0.0.0-SNAPSHOT"
-            |    kotlin("jvm") version "2.2.20-RC"
+            |    kotlin("jvm") version "2.3.10"
             |    application
             |}
             |repositories { 
