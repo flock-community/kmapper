@@ -1,5 +1,5 @@
 // CHECK_BYTECODE_LISTING
-import community.flock.kmapper.*
+import community.flock.kmapper.mapper
 
 data class Person(val id: Int, val firstName: String, val lastName: String)
 data class PersonDto(val id: Int, val name: String)
