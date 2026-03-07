@@ -71,7 +71,7 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
                     ?.mapNotNull { call ->
                         val functionName = (call.calleeReference as? FirNamedReference)?.name?.asString()
                         when (functionName) {
-                            "mapAssign" -> {
+                            "to" -> {
                                 val propSymbol = call.explicitReceiver
                                     ?.toReference(session)
                                     ?.toResolvedPropertySymbol()

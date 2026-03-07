@@ -9,5 +9,3 @@ fun generated(): Nothing = error("Mapper was not generated")
 fun <TO, FROM> FROM.mapper(block: (TO.(it: FROM) -> Unit)? = null): TO = generated()
 
 fun <T> T.ignore() {}
-
-fun <T> T.mapAssign(value: Any?) {}

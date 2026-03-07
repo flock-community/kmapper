@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.IrTypeOperatorCall
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isPrimitiveType
@@ -60,23 +61,32 @@ class KMapperIrBuildMapperVisitor(
 
         val mapping = callArgument?.function
             ?.body.let { it as? IrBlockBody }
-            ?.statements?.filterIsInstance<IrCall>().orEmpty()
+            ?.statements.orEmpty()
+            // Unwrap IrTypeOperatorCall wrappers (e.g., coercion to Unit) to find the actual IrCall
+            .map { stmt ->
+                when (stmt) {
+                    is IrTypeOperatorCall -> stmt.argument as? IrCall ?: stmt
+                    else -> stmt
+                }
+            }
+            .filterIsInstance<IrCall>()
             .associate { call ->
                 val functionName = call.symbol.owner.name.identifier
                 when (functionName) {
-                    "mapAssign" -> {
-                        // Find the extension receiver index in the function's parameters
+                    "to" -> {
+                        // `to` is used as assignment marker: age.to(value)
+                        // Extension receiver is the property getter call
+                        // First regular parameter is the value
                         val extReceiverIndex = call.symbol.owner.parameters
                             .indexOfFirst { it.kind == IrParameterKind.ExtensionReceiver }
-                            .takeIf { it >= 0 } ?: error("mapAssign must have an extension receiver parameter")
+                            .takeIf { it >= 0 } ?: error("to must have an extension receiver parameter")
                         val getterCall = call.arguments[extReceiverIndex] as? IrCall
-                            ?: error("mapAssign receiver must be a property getter call")
+                            ?: error("to receiver must be a property getter call")
                         val fieldName = getterCall.symbol.owner.correspondingPropertySymbol?.owner?.name
-                            ?: error("Cannot extract property name from mapAssign receiver")
-                        // The value argument is the first Regular parameter
+                            ?: error("Cannot extract property name from to receiver")
                         val valueIndex = call.symbol.owner.parameters
                             .indexOfFirst { it.kind == IrParameterKind.Regular }
-                            .takeIf { it >= 0 } ?: error("mapAssign must have a value parameter")
+                            .takeIf { it >= 0 } ?: error("to must have a value parameter")
                         val valueExpr = call.arguments[valueIndex]
                         fieldName to valueExpr
                     }

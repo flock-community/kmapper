@@ -21,13 +21,18 @@ import org.jetbrains.kotlin.name.Name
 
 /**
  * FIR extension that transforms val-property assignments inside mapper lambdas
- * into `mapAssign()` function calls.
+ * into function calls that are always resolvable without explicit imports.
  *
  * When the user writes `age = value` inside a mapper lambda where `age` resolves
  * to a val property on the receiver type, this alterer rewrites it as
- * `age.mapAssign(value)` so the compiler does not report "val cannot be reassigned".
+ * `age.to(value)` using the auto-imported `kotlin.to` function,
+ * so the compiler does not report "val cannot be reassigned".
  */
 class KMapperAssignAlterer(session: FirSession) : FirAssignExpressionAltererExtension(session) {
+
+    companion object {
+        private val ASSIGN_FUNCTION_NAME = Name.identifier("to")
+    }
 
     override fun transformVariableAssignment(variableAssignment: FirVariableAssignment): FirStatement? {
         if (!variableAssignment.shouldTransform()) return null
@@ -68,7 +73,7 @@ class KMapperAssignAlterer(session: FirSession) : FirAssignExpressionAltererExte
             }
             calleeReference = buildSimpleNamedReference {
                 source = variableAssignment.source
-                name = Name.identifier("mapAssign")
+                name = ASSIGN_FUNCTION_NAME
             }
             origin = FirFunctionCallOrigin.Regular
         }
