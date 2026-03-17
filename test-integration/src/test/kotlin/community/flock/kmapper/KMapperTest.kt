@@ -896,8 +896,8 @@ class KMapperTest {
             }
             .compileSuccess { output ->
                 assertTrue(
-                    output.contains("name=test"),
-                    "Expected name=test in output"
+                    output.contains("Target(value=3.14"),
+                    "Expected Target(value=3.14...) in output"
                 )
             }
     }
