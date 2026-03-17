@@ -958,6 +958,159 @@ class KMapperTest {
     }
 
     @Test
+    fun shouldCompile_valueClassWrap() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |@JvmInline
+                |value class Id(val id: Int)
+                |data class Source(val id: Int, val name: String)
+                |data class Target(val id: Id, val name: String)
+                |
+                |fun main() {
+                |  val source = Source(id=42, name="test")
+                |  val target:Target = source.mapper()
+                |  println(target)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("Target(id=Id(id=42), name=test)"),
+                    "Expected Target(id=Id(id=42), name=test) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_valueClassToValueClass() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |@JvmInline
+                |value class SourceId(val id: Int)
+                |data class Source(val id: SourceId, val name: String)
+                |
+                |@JvmInline
+                |value class TargetId(val id: Int)
+                |data class Target(val id: TargetId, val name: String)
+                |
+                |fun main() {
+                |  val source = Source(id=SourceId(42), name="test")
+                |  val target:Target = source.mapper()
+                |  println(target)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("Target(id=TargetId(id=42), name=test)"),
+                    "Expected Target(id=TargetId(id=42), name=test) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_valueClassUnwrapToNullable() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |@JvmInline
+                |value class Id(val id: Int)
+                |data class Source(val id: Id, val name: String)
+                |data class Target(val id: Int?, val name: String)
+                |
+                |fun main() {
+                |  val source = Source(id=Id(42), name="test")
+                |  val target:Target = source.mapper()
+                |  println(target)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("Target(id=42, name=test)"),
+                    "Expected Target(id=42, name=test) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldFail_nullableValueClassToNonNullable() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |@JvmInline
+                |value class Id(val id: Int)
+                |data class Source(val id: Id?, val name: String)
+                |data class Target(val id: Int, val name: String)
+                |
+                |fun main() {
+                |  val source = Source(id=Id(42), name="test")
+                |  val target:Target = source.mapper()
+                |  println(target)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileFail { output ->
+                assertTrue(
+                    output.contains("Missing mapping for: id"),
+                    "Expected Missing mapping for: id"
+                )
+            }
+    }
+
+    @Test
+    fun shouldFail_valueClassWideningCompose() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |@JvmInline
+                |value class Id(val id: Int)
+                |data class Source(val id: Id, val name: String)
+                |data class Target(val id: Long, val name: String)
+                |
+                |fun main() {
+                |  val source = Source(id=Id(42), name="test")
+                |  val target:Target = source.mapper()
+                |  println(target)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileFail { output ->
+                assertTrue(
+                    output.contains("Missing mapping for: id"),
+                    "Expected Missing mapping for: id"
+                )
+            }
+    }
+
+    @Test
     fun shouldFail_doubleToFloatNarrowing() {
         IntegrationTest(options)
             .file("App.kt") {
