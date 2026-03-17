@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isPrimitiveType
 import org.jetbrains.kotlin.ir.types.isString
 import org.jetbrains.kotlin.ir.types.makeNotNull
+import org.jetbrains.kotlin.ir.util.classId
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -132,11 +133,30 @@ class KMapperIrBuildMapperVisitor(
                     } else {
                         fromTypeArgument.readableProperties()
                             .find { it == field }
-                            ?.let {
-                                builder.irGetPropertyByName(
+                            ?.let { sourceField ->
+                                val property = builder.irGetPropertyByName(
                                     receiver = receiverArgument,
                                     propertyName = field.name
                                 )
+                                when {
+                                    // Widening: Int -> Long etc.
+                                    property != null && isWideningAllowed(sourceField.type, field.type) ->
+                                        builder.irWideningCall(property, field.type)
+                                    // Unwrap: value class -> inner type
+                                    property != null && sourceField.type.isValueClass() && !field.type.isValueClass() ->
+                                        builder.irValueClassUnwrap(property, sourceField.type)
+                                    // Wrap: inner type -> value class
+                                    property != null && !sourceField.type.isValueClass() && field.type.isValueClass() ->
+                                        builder.irValueClassWrap(property, field.type)
+                                    // Value-to-value: different value classes with same inner type
+                                    property != null && sourceField.type.isValueClass() && field.type.isValueClass()
+                                        && sourceField.type.makeNotNull() != field.type.makeNotNull() ->
+                                        builder.irValueClassWrap(
+                                            builder.irValueClassUnwrap(property, sourceField.type),
+                                            field.type
+                                        )
+                                    else -> property
+                                }
                             }
                             ?: toShape.constructor.defaultValue(index)
                     }
@@ -212,6 +232,41 @@ class KMapperIrBuildMapperVisitor(
             }
     }
 
+    private fun IrBuilder.irWideningCall(receiver: IrExpression, targetType: IrType): IrExpression {
+        val targetClassId = targetType.makeNotNull().classOrNull?.owner?.classId
+            ?: error("Cannot resolve target class for widening")
+        val conversionName = "to${targetClassId.shortClassName.asString()}"
+        val sourceClass = receiver.type.makeNotNull().classOrNull?.owner
+            ?: error("Cannot resolve source class for widening")
+        val conversionFunction = sourceClass.declarations
+            .filterIsInstance<IrSimpleFunction>()
+            .firstOrNull { it.name.asString() == conversionName }
+            ?: error("No $conversionName function found on ${sourceClass.name}")
+        return irCall(conversionFunction.symbol).apply {
+            dispatchReceiver = receiver
+        }
+    }
+
+    private fun IrBuilder.irValueClassUnwrap(receiver: IrExpression, valueClassType: IrType): IrExpression {
+        val irClass = valueClassType.classOrNull?.owner ?: error("Cannot resolve value class")
+        val property = irClass.declarations
+            .filterIsInstance<IrProperty>()
+            .firstOrNull { it.getter != null }
+            ?: error("No property found in value class ${irClass.name}")
+        return irCall(property.getter!!.symbol).apply {
+            dispatchReceiver = receiver
+        }
+    }
+
+    private fun IrBuilder.irValueClassWrap(receiver: IrExpression, targetType: IrType): IrExpression {
+        val irClass = targetType.classOrNull?.owner ?: error("Cannot resolve value class for wrapping")
+        val constructor = irClass.constructors.firstOrNull()
+            ?: error("No constructor found for value class ${irClass.name}")
+        return irCallConstructor(constructor.symbol, emptyList()).apply {
+            arguments[0] = receiver
+        }
+    }
+
     private fun IrBuilder.construct(
         expression: IrExpression,
         toShape: Shape,
@@ -241,7 +296,25 @@ class KMapperIrBuildMapperVisitor(
                     val property = irGetPropertyByName(expression, name) ?: error("Could not resolve property $name")
                     arguments[index] =
                         when {
-                            type.run { isPrimitiveType() || isString() } -> property
+                            type.run { isPrimitiveType() || isString() } -> {
+                                when {
+                                    // Unwrap value class to primitive
+                                    property.type.isValueClass() && !type.isValueClass() ->
+                                        irValueClassUnwrap(property, property.type)
+                                    // Widening
+                                    property.type.makeNotNull() != type.makeNotNull()
+                                        && isWideningAllowed(property.type, type) ->
+                                        irWideningCall(property, type)
+                                    else -> property
+                                }
+                            }
+                            // Wrap primitive into value class
+                            type.isValueClass() && !property.type.isValueClass() ->
+                                irValueClassWrap(property, type)
+                            // Value-to-value: different value classes, same inner type
+                            type.isValueClass() && property.type.isValueClass()
+                                && type.makeNotNull() != property.type.makeNotNull() ->
+                                irValueClassWrap(irValueClassUnwrap(property, property.type), type)
                             else -> construct(
                                 property,
                                 toShape = toShape.fields[index].type.convertShape(),

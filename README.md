@@ -205,6 +205,47 @@ val dto: UserDto = user.mapper()
 // UserDto(id=IdDto(id=1), name=John Doe)
 ```
 
+KMapper also supports automatic **unwrapping** and **wrapping** of value classes:
+
+```kotlin
+// Unwrap: value class → primitive
+@JvmInline value class Id(val id: Int)
+data class User(val id: Id, val name: String)
+data class UserDto(val id: Int, val name: String)
+
+val dto: UserDto = User(Id(1), "John Doe").mapper()
+// UserDto(id=1, name=John Doe)
+
+// Wrap: primitive → value class
+data class Source(val id: Int, val name: String)
+data class Target(val id: Id, val name: String)
+
+val target: Target = Source(42, "test").mapper()
+// Target(id=Id(id=42), name=test)
+```
+
+### Numeric Widening
+
+KMapper implicitly widens numeric types when mapping, following JVM's standard widening conversions:
+
+| Source | Allowed Targets |
+|--------|----------------|
+| `Byte` | `Short`, `Int`, `Long`, `Float`, `Double` |
+| `Short` | `Int`, `Long`, `Float`, `Double` |
+| `Int` | `Long`, `Float`, `Double` |
+| `Long` | `Float`, `Double` |
+| `Float` | `Double` |
+
+```kotlin
+data class Source(val value: Int, val name: String)
+data class Target(val value: Long, val name: String)
+
+val target: Target = Source(42, "test").mapper()
+// Target(value=42, name=test)
+```
+
+Narrowing conversions (e.g., `Long` → `Int`) are **not** allowed and will produce a compile-time error.
+
 ### List Mapping
 
 Lists of primitives are mapped automatically when types match. Lists of data classes are mapped recursively:
