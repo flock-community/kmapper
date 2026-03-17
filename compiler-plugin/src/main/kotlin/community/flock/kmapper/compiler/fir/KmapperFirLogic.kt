@@ -16,7 +16,9 @@ import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.ConeKotlinTypeProjection
 import org.jetbrains.kotlin.fir.types.isMarkedNullable
 import org.jetbrains.kotlin.fir.types.isPrimitive
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.name.StandardClassIds
 
 data class Field(
     val name: Name,
@@ -37,11 +39,21 @@ private fun nullableEqual(to: Field, from: Field): Boolean {
     return to.type.isMarkedNullable == from.type.isMarkedNullable
 }
 
+private val WIDENING_TABLE: Map<ClassId, Set<ClassId>> = mapOf(
+    StandardClassIds.Byte to setOf(StandardClassIds.Short, StandardClassIds.Int, StandardClassIds.Long, StandardClassIds.Float, StandardClassIds.Double),
+    StandardClassIds.Short to setOf(StandardClassIds.Int, StandardClassIds.Long, StandardClassIds.Float, StandardClassIds.Double),
+    StandardClassIds.Int to setOf(StandardClassIds.Long, StandardClassIds.Float, StandardClassIds.Double),
+    StandardClassIds.Long to setOf(StandardClassIds.Float, StandardClassIds.Double),
+    StandardClassIds.Float to setOf(StandardClassIds.Double),
+)
+
 private fun primaryEqual(to: Field, from: Field): Boolean {
     if (!to.type.isPrimitive || !from.type.isPrimitive) return false
-    if (to.type.isMarkedNullable != from.type.isMarkedNullable) return false
-    if (to.type.isMarkedNullable != from.type.isMarkedNullable) return false
-    return to.type == from.type
+    if (to.type == from.type) return true
+    // Check widening: from type can widen to target type
+    val fromClassId = (from.type as? ConeClassLikeType)?.lookupTag?.classId ?: return false
+    val toClassId = (to.type as? ConeClassLikeType)?.lookupTag?.classId ?: return false
+    return WIDENING_TABLE[fromClassId]?.contains(toClassId) == true
 }
 
 context(session: FirSession, collector: MessageCollector)

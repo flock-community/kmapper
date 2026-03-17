@@ -732,6 +732,34 @@ class KMapperTest {
     }
 
     @Test
+    fun shouldCompile_intToLongWidening() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class Source(val id: Int, val name: String)
+                |data class Target(val id: Long, val name: String)
+                |
+                |fun main() {
+                |  val source = Source(id=42, name="test")
+                |  val target:Target = source.mapper()
+                |  println(target)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("Target(id=42, name=test)"),
+                    "Expected Target(id=42, name=test) in output"
+                )
+            }
+    }
+
+    @Test
     fun shouldSuccess_ignoreValue() {
         IntegrationTest(options)
             .file("App.kt") {
