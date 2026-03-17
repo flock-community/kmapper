@@ -48,9 +48,10 @@ private val WIDENING_TABLE: Map<ClassId, Set<ClassId>> = mapOf(
 )
 
 private fun primaryEqual(to: Field, from: Field): Boolean {
-    if (!to.type.isPrimitive || !from.type.isPrimitive) return false
+    if (!to.type.isPrimitive && !from.type.isPrimitive) return false
     if (to.type == from.type) return true
     // Check widening: from type can widen to target type
+    // Use classId lookup which handles nullable target types (e.g., Int -> Long?)
     val fromClassId = (from.type as? ConeClassLikeType)?.lookupTag?.classId ?: return false
     val toClassId = (to.type as? ConeClassLikeType)?.lookupTag?.classId ?: return false
     return WIDENING_TABLE[fromClassId]?.contains(toClassId) == true

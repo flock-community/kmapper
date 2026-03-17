@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isPrimitiveType
 import org.jetbrains.kotlin.ir.types.isString
 import org.jetbrains.kotlin.ir.types.makeNotNull
+import org.jetbrains.kotlin.ir.util.classId
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.hasAnnotation
@@ -132,11 +133,18 @@ class KMapperIrBuildMapperVisitor(
                     } else {
                         fromTypeArgument.readableProperties()
                             .find { it == field }
-                            ?.let {
-                                builder.irGetPropertyByName(
+                            ?.let { sourceField ->
+                                val property = builder.irGetPropertyByName(
                                     receiver = receiverArgument,
                                     propertyName = field.name
                                 )
+                                // Widening: source type differs from target, needs toXxx() conversion
+                                if (property != null && sourceField.type.makeNotNull() != field.type.makeNotNull()
+                                    && isWideningAllowed(sourceField.type, field.type)) {
+                                    builder.irWideningCall(property, field.type)
+                                } else {
+                                    property
+                                }
                             }
                             ?: toShape.constructor.defaultValue(index)
                     }
@@ -212,6 +220,21 @@ class KMapperIrBuildMapperVisitor(
             }
     }
 
+    private fun IrBuilder.irWideningCall(receiver: IrExpression, targetType: IrType): IrExpression {
+        val targetClassId = targetType.makeNotNull().classOrNull?.owner?.classId
+            ?: error("Cannot resolve target class for widening")
+        val conversionName = "to${targetClassId.shortClassName.asString()}"
+        val sourceClass = receiver.type.makeNotNull().classOrNull?.owner
+            ?: error("Cannot resolve source class for widening")
+        val conversionFunction = sourceClass.declarations
+            .filterIsInstance<IrSimpleFunction>()
+            .firstOrNull { it.name.asString() == conversionName }
+            ?: error("No $conversionName function found on ${sourceClass.name}")
+        return irCall(conversionFunction.symbol).apply {
+            dispatchReceiver = receiver
+        }
+    }
+
     private fun IrBuilder.construct(
         expression: IrExpression,
         toShape: Shape,
@@ -241,7 +264,14 @@ class KMapperIrBuildMapperVisitor(
                     val property = irGetPropertyByName(expression, name) ?: error("Could not resolve property $name")
                     arguments[index] =
                         when {
-                            type.run { isPrimitiveType() || isString() } -> property
+                            type.run { isPrimitiveType() || isString() } -> {
+                                if (property.type.makeNotNull() != type.makeNotNull()
+                                    && isWideningAllowed(property.type, type)) {
+                                    irWideningCall(property, type)
+                                } else {
+                                    property
+                                }
+                            }
                             else -> construct(
                                 property,
                                 toShape = toShape.fields[index].type.convertShape(),
