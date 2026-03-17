@@ -700,6 +700,38 @@ class KMapperTest {
     }
 
     @Test
+    fun shouldCompile_extensionFunction() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class User(val firstName: String, val lastName: String, val age: Int)
+                |data class UserDto(val name: String, val age: Int)
+                |
+                |fun User.toDto(): UserDto = mapper {
+                |    name = "${it.firstName} ${it.lastName}"
+                |}
+                |
+                |fun main() {
+                |  val user = User("John", "Doe", 99)
+                |  val userDto = user.toDto()
+                |  println(userDto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("UserDto(name=John Doe, age=99)"),
+                    "Expected UserDto(name=John Doe, age=99) in output"
+                )
+            }
+    }
+
+    @Test
     fun shouldSuccess_ignoreValue() {
         IntegrationTest(options)
             .file("App.kt") {
