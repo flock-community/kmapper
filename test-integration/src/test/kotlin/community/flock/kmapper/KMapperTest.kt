@@ -393,7 +393,7 @@ class KMapperTest {
     }
 
     @Test
-    fun shouldFail_valueClassap() {
+    fun shouldCompile_valueClassUnwrap() {
         IntegrationTest(options)
             .file("App.kt") {
                 $$"""
@@ -403,22 +403,21 @@ class KMapperTest {
                 |
                 |@JvmInline
                 |value class Id(val id: Int)
-                |data class User(val id: Id, val name: String)
-                |
-                |data class UserDto(val id: Int, val name: String)
+                |data class Source(val id: Id, val name: String)
+                |data class Target(val id: Int, val name: String)
                 |
                 |fun main() {
-                |  val user = User(id=Id(1), name="John Doe")
-                |  val res:UserDto = user.mapper()
-                |  println(res)
+                |  val source = Source(id=Id(42), name="test")
+                |  val target:Target = source.mapper()
+                |  println(target)
                 |}
                 |
                 """.trimMargin()
             }
-            .compileFail { output ->
+            .compileSuccess { output ->
                 assertTrue(
-                    output.contains("Missing mapping for: id"),
-                    "Missing mapping for: id"
+                    output.contains("Target(id=42, name=test)"),
+                    "Expected Target(id=42, name=test) in output"
                 )
             }
     }

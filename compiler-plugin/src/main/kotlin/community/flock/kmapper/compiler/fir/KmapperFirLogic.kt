@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.fir.declarations.constructors
 import org.jetbrains.kotlin.fir.declarations.declaredProperties
 import org.jetbrains.kotlin.fir.declarations.utils.isClass
 import org.jetbrains.kotlin.fir.declarations.utils.isEnumClass
+import org.jetbrains.kotlin.fir.declarations.utils.isInlineOrValue
 import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
@@ -31,7 +32,7 @@ context(session: FirSession, collector: MessageCollector)
 infix fun Field.deepEqual(other: Field): Boolean =
     name == other.name &&
         nullableEqual(this, other) &&
-        (primaryEqual(this, other) || enumsEqual(this, other) || collectionsEqual(this, other) || fieldsEqual(this, other))
+        (primaryEqual(this, other) || valueClassEqual(this, other) || enumsEqual(this, other) || collectionsEqual(this, other) || fieldsEqual(this, other))
 
 context(session: FirSession, collector: MessageCollector)
 private fun nullableEqual(to: Field, from: Field): Boolean {
@@ -55,6 +56,42 @@ private fun primaryEqual(to: Field, from: Field): Boolean {
     val fromClassId = (from.type as? ConeClassLikeType)?.lookupTag?.classId ?: return false
     val toClassId = (to.type as? ConeClassLikeType)?.lookupTag?.classId ?: return false
     return WIDENING_TABLE[fromClassId]?.contains(toClassId) == true
+}
+
+context(session: FirSession, collector: MessageCollector)
+private fun valueClassEqual(to: Field, from: Field): Boolean {
+    val toClass = to.type.toRegularClassSymbol(session)
+    val fromClass = from.type.toRegularClassSymbol(session)
+    val toIsInline = toClass?.isInlineOrValue == true
+    val fromIsInline = fromClass?.isInlineOrValue == true
+
+    if (!toIsInline && !fromIsInline) return false
+
+    fun FirRegularClassSymbol.singleInnerType(): ConeKotlinType? {
+        val constructor = constructors(session).firstOrNull() ?: return null
+        val params = constructor.valueParameterSymbols
+        if (params.size != 1) return null  // Excludes multi-field value classes
+        return params.first().resolvedReturnType
+    }
+
+    return when {
+        // Unwrap: source is value class, target is plain
+        fromIsInline && !toIsInline -> {
+            val innerType = fromClass!!.singleInnerType() ?: return false
+            innerType == to.type
+        }
+        // Wrap: target is value class, source is plain
+        toIsInline && !fromIsInline -> {
+            val innerType = toClass!!.singleInnerType() ?: return false
+            innerType == from.type
+        }
+        // Value-to-value: both are value classes with same inner type
+        else -> {
+            val toInner = toClass!!.singleInnerType() ?: return false
+            val fromInner = fromClass!!.singleInnerType() ?: return false
+            toInner == fromInner
+        }
+    }
 }
 
 context(session: FirSession, collector: MessageCollector)
