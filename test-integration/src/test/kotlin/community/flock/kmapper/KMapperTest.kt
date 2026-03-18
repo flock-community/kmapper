@@ -1081,6 +1081,80 @@ class KMapperTest {
     }
 
     @Test
+    fun shouldCompile_valueClassWrapWithCompanionInvoke() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |@JvmInline
+                |value class Email(val value: String) {
+                |  companion object {
+                |    operator fun invoke(value: String): Email {
+                |      require(value.contains("@")) { "Invalid email: ${'$'}value" }
+                |      return Email(value)
+                |    }
+                |  }
+                |}
+                |data class Source(val email: String, val name: String)
+                |data class Target(val email: Email, val name: String)
+                |
+                |fun main() {
+                |  val source = Source(email="test@example.com", name="test")
+                |  val target:Target = source.mapper()
+                |  println(target)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("Target(email=Email(value=test@example.com), name=test)"),
+                    "Expected Target(email=Email(value=test@example.com), name=test) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_valueClassUnwrapWithCompanionInvoke() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |@JvmInline
+                |value class Email(val value: String) {
+                |  companion object {
+                |    operator fun invoke(value: String): Email {
+                |      require(value.contains("@")) { "Invalid email: ${'$'}value" }
+                |      return Email(value)
+                |    }
+                |  }
+                |}
+                |data class Source(val email: Email, val name: String)
+                |data class Target(val email: String, val name: String)
+                |
+                |fun main() {
+                |  val source = Source(email=Email("test@example.com"), name="test")
+                |  val target:Target = source.mapper()
+                |  println(target)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("Target(email=test@example.com, name=test)"),
+                    "Expected Target(email=test@example.com, name=test) in output"
+                )
+            }
+    }
+
+    @Test
     fun shouldFail_valueClassWideningCompose() {
         IntegrationTest(options)
             .file("App.kt") {
