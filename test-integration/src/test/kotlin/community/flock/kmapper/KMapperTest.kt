@@ -1180,6 +1180,37 @@ class KMapperTest {
                 assertTrue(
                     output.contains("Missing mapping for: id"),
                     "Expected Missing mapping for: id"
+
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_jdkTypes() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |import java.util.UUID
+                |import java.time.Instant
+                |
+                |data class EntityWithJdkTypes(val id: UUID, val name: String, val createdAt: Instant)
+                |data class DomainWithJdkTypes(val id: UUID, val name: String, val createdAt: Instant)
+                |
+                |fun main() {
+                |  val entity = EntityWithJdkTypes(id = UUID.randomUUID(), name = "test", createdAt = Instant.now())
+                |  val domain: DomainWithJdkTypes = entity.mapper()
+                |  println(domain)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("DomainWithJdkTypes("),
+                    "Expected DomainWithJdkTypes in output"
                 )
             }
     }
