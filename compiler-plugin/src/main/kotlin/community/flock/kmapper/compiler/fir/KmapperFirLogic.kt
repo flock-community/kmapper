@@ -2,6 +2,7 @@ package community.flock.kmapper.compiler.fir
 
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.FirBinaryDependenciesModuleData
 import org.jetbrains.kotlin.fir.declarations.DirectDeclarationsAccess
 import org.jetbrains.kotlin.fir.declarations.FirEnumEntry
 import org.jetbrains.kotlin.fir.declarations.constructors
@@ -146,6 +147,7 @@ private fun ConeKotlinType.listElementType(): ConeKotlinType? {
 context(session: FirSession)
 private fun ConeKotlinType.resolveConstructorFields(): List<Field> {
     val classSymbol = toRegularClassSymbol(session)
+    if (classSymbol?.moduleData is FirBinaryDependenciesModuleData) return emptyList()
     val primaryConstructor = classSymbol?.constructors(session)?.firstOrNull()
     return primaryConstructor?.valueParameterSymbols?.map { parameter ->
         Field(
@@ -160,6 +162,7 @@ private fun ConeKotlinType.resolveConstructorFields(): List<Field> {
 context(session: FirSession)
 private fun ConeKotlinType.resolvePropertyFields(): List<Field> {
     val classSymbol = toRegularClassSymbol(session)
+    if (classSymbol?.moduleData is FirBinaryDependenciesModuleData) return emptyList()
     return classSymbol?.declaredProperties(session)
         .orEmpty()
         .map { property ->

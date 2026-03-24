@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.diagnostics.reportOn
+import org.jetbrains.kotlin.fir.FirBinaryDependenciesModuleData
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.analysis.checkers.MppCheckerKind
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
@@ -136,6 +137,7 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
 
     private fun ConeKotlinType.resolveConstructorFields(): List<Field> {
         val classSymbol = toRegularClassSymbol(session)
+        if (classSymbol?.moduleData is FirBinaryDependenciesModuleData) return emptyList()
         val primaryConstructor = classSymbol?.constructors(session)?.firstOrNull()
         return primaryConstructor?.valueParameterSymbols?.map { parameter ->
             Field(
@@ -154,6 +156,7 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
 
     private fun ConeKotlinType.resolvePropertyFields(): List<Field> {
         val classSymbol = toRegularClassSymbol(session)
+        if (classSymbol?.moduleData is FirBinaryDependenciesModuleData) return emptyList()
         return classSymbol?.declaredProperties(session)
             .orEmpty()
             .map { property ->
