@@ -6,11 +6,15 @@ import community.flock.kmapper.compiler.util.MessageCollectorUtil.info
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.ObsoleteDescriptorBasedAPI
 import org.jetbrains.kotlin.ir.builders.IrBuilder
 import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
+import org.jetbrains.kotlin.ir.builders.irGet
+import org.jetbrains.kotlin.ir.builders.irReturn
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
 import org.jetbrains.kotlin.ir.declarations.IrParameterKind
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -19,18 +23,23 @@ import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.IrTypeOperatorCall
+import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionExpressionImpl
+import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.isPrimitiveType
 import org.jetbrains.kotlin.ir.types.isString
 import org.jetbrains.kotlin.ir.types.makeNotNull
+import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.classId
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
@@ -169,8 +178,13 @@ class KMapperIrBuildMapperVisitor(
                             propertyName = field.name
                         ) ?: error("Could not resolve property ${field.name}")
                         if (field.type.isKotlinList() && receiver.type.isKotlinList()) {
-                            // For lists, pass through as-is when no explicit mapping is provided
-                            receiver
+                            val toElemType = field.type.listElementType()
+                            val fromElemType = receiver.type.listElementType()
+                            if (toElemType != null && fromElemType != null && toElemType.makeNotNull() != fromElemType.makeNotNull()) {
+                                builder.irListMap(receiver, fromElemType, toElemType)
+                            } else {
+                                receiver
+                            }
                         } else {
                             builder.construct(
                                 expression = receiver,
@@ -205,6 +219,102 @@ class KMapperIrBuildMapperVisitor(
 
     private fun IrType.isKotlinList(): Boolean =
         classOrNull?.owner?.fqNameWhenAvailable?.asString() == "kotlin.collections.List"
+
+    private fun IrType.listElementType(): IrType? =
+        (this as? IrSimpleType)?.arguments?.firstOrNull()?.let {
+            (it as? IrType) ?: (it as? org.jetbrains.kotlin.ir.types.IrTypeProjection)?.type
+        }
+
+    private fun IrBuilder.irListMap(listExpr: IrExpression, fromElemType: IrType, toElemType: IrType): IrExpression {
+        val pluginContext = this@KMapperIrBuildMapperVisitor.context
+
+        // Find kotlin.collections.Iterable.map extension function
+        val mapFunSymbol = pluginContext.referenceFunctions(
+            CallableId(FqName("kotlin.collections"), Name.identifier("map"))
+        ).first { symbol ->
+            val fn = symbol.owner
+            fn.parameters.any { p ->
+                p.kind == IrParameterKind.ExtensionReceiver
+                    && p.type.classOrNull?.owner?.fqNameWhenAvailable?.asString() == "kotlin.collections.Iterable"
+            } && fn.typeParameters.size == 2
+        }
+
+        // Create lambda function: { it: FromElem -> construct(it) }
+        val lambdaFun = pluginContext.irFactory.createSimpleFunction(
+            startOffset = UNDEFINED_OFFSET,
+            endOffset = UNDEFINED_OFFSET,
+            origin = IrDeclarationOrigin.LOCAL_FUNCTION_FOR_LAMBDA,
+            name = Name.special("<anonymous>"),
+            visibility = org.jetbrains.kotlin.descriptors.DescriptorVisibilities.LOCAL,
+            isInline = false,
+            isExpect = false,
+            returnType = toElemType,
+            modality = org.jetbrains.kotlin.descriptors.Modality.FINAL,
+            symbol = org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl(),
+            isTailrec = false,
+            isSuspend = false,
+            isOperator = false,
+            isInfix = false,
+        )
+
+        val lambdaParam = pluginContext.irFactory.createValueParameter(
+            startOffset = UNDEFINED_OFFSET,
+            endOffset = UNDEFINED_OFFSET,
+            origin = IrDeclarationOrigin.DEFINED,
+            kind = IrParameterKind.Regular,
+            name = Name.identifier("it"),
+            type = fromElemType,
+            isAssignable = false,
+            symbol = org.jetbrains.kotlin.ir.symbols.impl.IrValueParameterSymbolImpl(),
+            varargElementType = null,
+            isCrossinline = false,
+            isNoinline = false,
+            isHidden = false,
+        )
+        lambdaParam.parent = lambdaFun
+        lambdaFun.parameters = listOf(lambdaParam)
+
+        // Build body: return construct(get(lambdaParam))
+        val lambdaBuilder = DeclarationIrBuilder(pluginContext, lambdaFun.symbol)
+        val paramGet = lambdaBuilder.irGet(lambdaParam)
+
+        val toElemShape = toElemType.convertShape()
+        val fromElemShape = fromElemType.convertShape()
+        val constructedExpr = lambdaBuilder.construct(paramGet, toElemShape, fromElemShape)
+
+        val body = pluginContext.irFactory.createBlockBody(UNDEFINED_OFFSET, UNDEFINED_OFFSET)
+        body.statements.add(lambdaBuilder.irReturn(constructedExpr))
+        lambdaFun.body = body
+
+        // Create Function1<FromElem, ToElem> type for the lambda
+        val function1Symbol = pluginContext.referenceClass(
+            org.jetbrains.kotlin.name.ClassId(FqName("kotlin"), Name.identifier("Function1"))
+        ) ?: error("Cannot find kotlin.Function1")
+        val lambdaType = function1Symbol.typeWith(fromElemType, toElemType)
+
+        val lambdaExpr = IrFunctionExpressionImpl(
+            startOffset = UNDEFINED_OFFSET,
+            endOffset = UNDEFINED_OFFSET,
+            type = lambdaType,
+            function = lambdaFun,
+            origin = IrStatementOrigin.LAMBDA,
+        )
+
+        // Build call: listExpr.map(lambda)
+        val mapOwner = mapFunSymbol.owner
+        return irCall(mapFunSymbol).apply {
+            (typeArguments as MutableList<IrType?>)[0] = fromElemType
+            (typeArguments as MutableList<IrType?>)[1] = toElemType
+
+            // Set extension receiver (the list)
+            val extReceiverIndex = mapOwner.parameters.indexOfFirst { p -> p.kind == IrParameterKind.ExtensionReceiver }
+            arguments[extReceiverIndex] = listExpr
+
+            // Set the lambda argument
+            val regularParamIndex = mapOwner.parameters.indexOfFirst { p -> p.kind == IrParameterKind.Regular }
+            arguments[regularParamIndex] = lambdaExpr
+        }
+    }
 
     // Returns all readable properties (with a getter) as fields: used to detect available source fields.
     private fun IrType.readableProperties(): List<Field> {
@@ -273,10 +383,15 @@ class KMapperIrBuildMapperVisitor(
         fromShape: Shape
     ): IrExpression =
 
-        // If both sides are kotlin.collections.List, pass through for now (primitive lists)
+        // If both sides are kotlin.collections.List, map elements if types differ
         if (toShape.type.isKotlinList() && fromShape.type.isKotlinList()) {
-            // Note: Complex element mapping is handled elsewhere or falls back to direct assignment for identical element types
-            expression
+            val toElemType = toShape.type.listElementType()
+            val fromElemType = fromShape.type.listElementType()
+            if (toElemType != null && fromElemType != null && toElemType.makeNotNull() != fromElemType.makeNotNull()) {
+                irListMap(expression, fromElemType, toElemType)
+            } else {
+                expression
+            }
 
         // Construct Enum Class
         } else if (toShape.isEnum() && fromShape.isEnum()) {
