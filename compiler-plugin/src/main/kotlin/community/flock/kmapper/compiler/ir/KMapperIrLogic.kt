@@ -14,7 +14,7 @@ import org.jetbrains.kotlin.name.StandardClassIds
 
 data class Shape(
     val type: IrType,
-    val constructor: IrConstructor,
+    val constructor: IrConstructor?,
     val fields: List<Field>
 )
 

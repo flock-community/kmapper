@@ -139,12 +139,14 @@ class KMapperIrBuildMapperVisitor(
             return builder.construct(receiverArgument, toShape, fromShape)
         }
 
-        val constructorCall = builder.irCallConstructor(toShape.constructor.symbol, emptyList()).apply {
+        val toConstructor = toShape.constructor
+            ?: error("No primary constructor found for target type: ${toTypeArgument.classOrNull?.owner?.name}")
+        val constructorCall = builder.irCallConstructor(toConstructor.symbol, emptyList()).apply {
             toShape.fields.onEachIndexed { index, field ->
 
                 val mappedValue =
                     if (mapping.containsKey(field.name)) {
-                        mapping[field.name] ?: toShape.constructor.defaultValue(index)
+                        mapping[field.name] ?: toConstructor.defaultValue(index)
                     } else {
                         fromTypeArgument.readableProperties()
                             .find { it == field }
@@ -173,7 +175,7 @@ class KMapperIrBuildMapperVisitor(
                                     else -> property
                                 }
                             }
-                            ?: toShape.constructor.defaultValue(index)
+                            ?: toConstructor.defaultValue(index)
                     }
 
                 collector.info("mappedValue: $mappedValue")
@@ -215,12 +217,13 @@ class KMapperIrBuildMapperVisitor(
         if (typeArgumentClass.fqNameWhenAvailable?.asString() == "kotlin.collections.List") {
             error("List type should be handled without convertShape")
         }
-        val typeArgumentConstructor =
-            typeArgumentClass.constructors.firstOrNull() ?: error("No primary constructor found for type argument: ${typeArgumentClass.name}")
-        return Shape(
-            this,
-            typeArgumentConstructor,
-            typeArgumentConstructor.parameters.map { Field(it.name, it.type) })
+        val typeArgumentConstructor = typeArgumentClass.constructors.firstOrNull()
+        val fields = if (typeArgumentConstructor != null) {
+            typeArgumentConstructor.parameters.map { Field(it.name, it.type) }
+        } else {
+            readableProperties()
+        }
+        return Shape(this, typeArgumentConstructor, fields)
     }
 
     private fun IrType.isKotlinList(): Boolean =
@@ -411,7 +414,9 @@ class KMapperIrBuildMapperVisitor(
 
             // Construct Data Class
         } else {
-            irCallConstructor(toShape.constructor.symbol, emptyList()).apply {
+            val constructor = toShape.constructor
+                ?: error("No primary constructor found for target type: ${toShape.type.classOrNull?.owner?.name}")
+            irCallConstructor(constructor.symbol, emptyList()).apply {
                 collector.info("Mapping constructor: ${toShape}")
                 toShape.fields.onEachIndexed { index, (name, type) ->
                     val property = irGetPropertyByName(expression, name) ?: error("Could not resolve property $name")
