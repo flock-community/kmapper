@@ -76,6 +76,68 @@ class EnumMappingTest {
     }
 
     @Test
+    fun shouldCompile_enumWithLabelProperty() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |enum class FieldType { TEXT, NUMBER }
+                |data class FormField(val name: String, val type: FieldType)
+                |
+                |enum class EvaluationFieldType(val label: String) { TEXT("Text"), NUMBER("Number") }
+                |data class EvaluationFormField(val name: String, val type: EvaluationFieldType)
+                |
+                |fun main() {
+                |  val field = FormField(name="age", type=FieldType.NUMBER)
+                |  val dto: EvaluationFormField = field.mapper()
+                |  println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("EvaluationFormField(name=age, type=NUMBER)"),
+                    "Expected EvaluationFormField(name=age, type=NUMBER) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_enumWithLabelPropertyReverse() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |enum class EvaluationFieldType(val label: String) { TEXT("Text"), NUMBER("Number") }
+                |data class EvaluationFormField(val name: String, val type: EvaluationFieldType)
+                |
+                |enum class FieldType { TEXT, NUMBER }
+                |data class FormField(val name: String, val type: FieldType)
+                |
+                |fun main() {
+                |  val field = EvaluationFormField(name="age", type=EvaluationFieldType.NUMBER)
+                |  val dto: FormField = field.mapper()
+                |  println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("FormField(name=age, type=NUMBER)"),
+                    "Expected FormField(name=age, type=NUMBER) in output"
+                )
+            }
+    }
+
+    @Test
     fun shouldSuccess_nestedEnumMapping() {
         IntegrationTest(options)
             .file("App.kt") {
