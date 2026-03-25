@@ -176,7 +176,7 @@ private fun ConeKotlinType.resolvePropertyFields(): List<Field> {
 }
 
 @OptIn(DirectDeclarationsAccess::class, SymbolInternals::class)
-private fun FirRegularClassSymbol.enumEntryNames(): List<Name> =
+internal fun FirRegularClassSymbol.enumEntryNames(): List<Name> =
     this.fir.declarations
         .filterIsInstance<FirEnumEntry>()
         .map { it.name }
