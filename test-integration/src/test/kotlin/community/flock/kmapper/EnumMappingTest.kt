@@ -138,6 +138,64 @@ class EnumMappingTest {
     }
 
     @Test
+    fun shouldCompile_directEnumWithLabelProperty() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |enum class MimeType { IMAGE_JPEG, IMAGE_PNG }
+                |enum class MimeTypeDto(val label: String) { IMAGE_JPEG("IMAGE_JPEG"), IMAGE_PNG("IMAGE_PNG") }
+                |
+                |fun MimeType.toDto(): MimeTypeDto = mapper {}
+                |
+                |fun main() {
+                |  val dto = MimeType.IMAGE_JPEG.toDto()
+                |  println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("IMAGE_JPEG"),
+                    "Expected IMAGE_JPEG in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_directEnumWithLabelPropertyReverse() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |enum class MimeTypeDto(val label: String) { IMAGE_JPEG("IMAGE_JPEG"), IMAGE_PNG("IMAGE_PNG") }
+                |enum class MimeType { IMAGE_JPEG, IMAGE_PNG }
+                |
+                |fun MimeTypeDto.toMimeType(): MimeType = mapper {}
+                |
+                |fun main() {
+                |  val result = MimeTypeDto.IMAGE_JPEG.toMimeType()
+                |  println(result)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("IMAGE_JPEG"),
+                    "Expected IMAGE_JPEG in output"
+                )
+            }
+    }
+
+    @Test
     fun shouldSuccess_nestedEnumMapping() {
         IntegrationTest(options)
             .file("App.kt") {

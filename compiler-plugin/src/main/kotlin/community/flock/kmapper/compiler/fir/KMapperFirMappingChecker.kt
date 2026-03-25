@@ -1,5 +1,6 @@
 import community.flock.kmapper.compiler.fir.Field
 import community.flock.kmapper.compiler.fir.deepEqual
+import community.flock.kmapper.compiler.fir.enumEntryNames
 import community.flock.kmapper.compiler.util.Diagnostics
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
@@ -15,6 +16,7 @@ import org.jetbrains.kotlin.fir.analysis.extensions.FirAdditionalCheckersExtensi
 import org.jetbrains.kotlin.fir.declarations.constructors
 import org.jetbrains.kotlin.fir.declarations.declaredProperties
 import org.jetbrains.kotlin.fir.declarations.hasAnnotation
+import org.jetbrains.kotlin.fir.declarations.utils.isEnumClass
 import org.jetbrains.kotlin.fir.expressions.FirAnonymousFunctionExpression
 import org.jetbrains.kotlin.fir.expressions.FirCall
 import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
@@ -30,8 +32,11 @@ import org.jetbrains.kotlin.fir.types.FirTypeProjectionWithVariance
 import org.jetbrains.kotlin.fir.types.coneTypeOrNull
 import org.jetbrains.kotlin.fir.types.resolvedType
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.fir.declarations.DirectDeclarationsAccess
+import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.name.FqName
 
+@OptIn(DirectDeclarationsAccess::class, SymbolInternals::class)
 class KMapperFirMappingChecker(val collector: MessageCollector, private val session: FirSession) :
 
     FirCallChecker(MppCheckerKind.Common) {
@@ -52,6 +57,21 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
         if (!hasAnnotation) return
 
         val function = expression as? FirFunctionCall ?: return
+
+        // Skip field resolution for direct enum-to-enum mapping with matching entry names
+        val fromType = function.typeArguments.getOrNull(1)
+            ?.let { it as? FirTypeProjectionWithVariance }?.typeRef?.coneTypeOrNull
+        val toType = function.typeArguments.firstOrNull()
+            ?.let { it as? FirTypeProjectionWithVariance }?.typeRef?.coneTypeOrNull
+        if (fromType != null && toType != null) {
+            val fromEnum = fromType.toRegularClassSymbol(session)?.takeIf { it.isEnumClass }
+            val toEnum = toType.toRegularClassSymbol(session)?.takeIf { it.isEnumClass }
+            if (fromEnum != null && toEnum != null) {
+                val fromEntries = fromEnum.enumEntryNames().toSet()
+                val toEntries = toEnum.enumEntryNames().toSet()
+                if (fromEntries == toEntries) return
+            }
+        }
 
         val fromFields = function.typeArguments
             .getOrNull(1)

@@ -132,6 +132,12 @@ class KMapperIrBuildMapperVisitor(
         }
 
         val toShape = toTypeArgument.convertShape()
+        val fromShape = fromTypeArgument.convertShape()
+
+        // Direct enum-to-enum mapping: use valueOf(name)
+        if (toShape.isEnum() && fromShape.isEnum()) {
+            return builder.construct(receiverArgument, toShape, fromShape)
+        }
 
         val constructorCall = builder.irCallConstructor(toShape.constructor.symbol, emptyList()).apply {
             toShape.fields.onEachIndexed { index, field ->
