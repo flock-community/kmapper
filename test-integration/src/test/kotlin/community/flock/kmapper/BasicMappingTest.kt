@@ -303,6 +303,171 @@ class BasicMappingTest {
     }
 
     @Test
+    fun shouldCompile_sourceWithPrivateConstructor() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class AnnotationProgress private constructor(
+                |    val evaluationId: String,
+                |    val totalInputs: Int,
+                |    val annotatedInputs: Int,
+                |) {
+                |    companion object {
+                |        operator fun invoke(evaluationId: String, totalInputs: Int, annotatedInputs: Int): AnnotationProgress =
+                |            AnnotationProgress(evaluationId, totalInputs, annotatedInputs)
+                |    }
+                |}
+                |
+                |data class AnnotationProgressDto(val evaluationId: String, val totalInputs: Int, val annotatedInputs: Int)
+                |
+                |fun AnnotationProgress.toDto(): AnnotationProgressDto = mapper()
+                |
+                |fun main() {
+                |    val progress = AnnotationProgress("eval-1", 10, 5)
+                |    val dto = progress.toDto()
+                |    println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("AnnotationProgressDto(evaluationId=eval-1, totalInputs=10, annotatedInputs=5)"),
+                    "Expected AnnotationProgressDto(evaluationId=eval-1, totalInputs=10, annotatedInputs=5) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_sourceWithPrivateConstructorAndExplicitMapping() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class AnnotationProgress private constructor(
+                |    val evaluationId: String,
+                |    val totalInputs: Int,
+                |    val annotatedInputs: Int,
+                |) {
+                |    companion object {
+                |        operator fun invoke(evaluationId: String, totalInputs: Int, annotatedInputs: Int): AnnotationProgress =
+                |            AnnotationProgress(evaluationId, totalInputs, annotatedInputs)
+                |    }
+                |}
+                |
+                |data class AnnotationProgressDto(val evalId: String, val total: Long, val annotated: Long)
+                |
+                |fun AnnotationProgress.toDto(): AnnotationProgressDto = mapper {
+                |    evalId = it.evaluationId
+                |    total = it.totalInputs.toLong()
+                |    annotated = it.annotatedInputs.toLong()
+                |}
+                |
+                |fun main() {
+                |    val progress = AnnotationProgress("eval-1", 10, 5)
+                |    val dto = progress.toDto()
+                |    println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("AnnotationProgressDto(evalId=eval-1, total=10, annotated=5)"),
+                    "Expected AnnotationProgressDto(evalId=eval-1, total=10, annotated=5) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_sourceWithNoConstructor() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |class Progress private constructor(
+                |    val evaluationId: String,
+                |    val totalInputs: Int,
+                |    val annotatedInputs: Int,
+                |) {
+                |    companion object {
+                |        fun create(evaluationId: String, totalInputs: Int, annotatedInputs: Int): Progress =
+                |            Progress(evaluationId, totalInputs, annotatedInputs)
+                |    }
+                |}
+                |
+                |data class ProgressDto(val evaluationId: String, val totalInputs: Int, val annotatedInputs: Int)
+                |
+                |fun Progress.toDto(): ProgressDto = mapper()
+                |
+                |fun main() {
+                |    val progress = Progress.create("eval-1", 10, 5)
+                |    val dto = progress.toDto()
+                |    println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("ProgressDto(evaluationId=eval-1, totalInputs=10, annotatedInputs=5)"),
+                    "Expected ProgressDto(evaluationId=eval-1, totalInputs=10, annotatedInputs=5) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_sourceIsInterface() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |interface HasProgress {
+                |    val evaluationId: String
+                |    val totalInputs: Int
+                |    val annotatedInputs: Int
+                |}
+                |
+                |data class ProgressImpl(
+                |    override val evaluationId: String,
+                |    override val totalInputs: Int,
+                |    override val annotatedInputs: Int,
+                |) : HasProgress
+                |
+                |data class ProgressDto(val evaluationId: String, val totalInputs: Int, val annotatedInputs: Int)
+                |
+                |fun HasProgress.toDto(): ProgressDto = mapper()
+                |
+                |fun main() {
+                |    val progress: HasProgress = ProgressImpl("eval-1", 10, 5)
+                |    val dto = progress.toDto()
+                |    println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("ProgressDto(evaluationId=eval-1, totalInputs=10, annotatedInputs=5)"),
+                    "Expected ProgressDto(evaluationId=eval-1, totalInputs=10, annotatedInputs=5) in output"
+                )
+            }
+    }
+
+    @Test
     fun shouldFail_missingParameterAge() {
         IntegrationTest(options)
             .file("App.kt") {
