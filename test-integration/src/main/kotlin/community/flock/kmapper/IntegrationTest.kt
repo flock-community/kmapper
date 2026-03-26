@@ -5,7 +5,9 @@ import java.nio.file.Files
 
 class IntegrationTest(options: Options) {
     data class Options(
-        val kotlinVersion: String
+        val kotlinVersion: String,
+        val additionalPlugins: List<String> = emptyList(),
+        val additionalDependencies: List<String> = emptyList(),
     )
 
     data class File(
@@ -16,7 +18,7 @@ class IntegrationTest(options: Options) {
 
     val files = mutableListOf<File>(
         settingsGradle,
-        buildGradle,
+        buildGradle(options),
     )
 
     private fun compile(): GradleRunner {
@@ -69,29 +71,35 @@ class IntegrationTest(options: Options) {
             """.trimMargin()
         )
 
-        val buildGradle = File(
-            "",
-            "build.gradle.kts",
-            """
-            |plugins {
-            |    id("community.flock.kmapper") version "0.0.0-SNAPSHOT"
-            |    kotlin("jvm") version "2.3.10"
-            |    application
-            |}
-            |repositories { 
-            |  mavenCentral()
-            |  mavenLocal()
-            |}
-            |dependencies {
-            |    implementation(kotlin("stdlib"))
-            |}
-            |kotlin {
-            |  jvmToolchain(21)
-            |}
-            |application {
-            |  mainClass.set("sample.AppKt")
-            |}
-            """.trimMargin()
-        )
+        fun buildGradle(options: Options): File {
+            val additionalPlugins = options.additionalPlugins.joinToString("\n") { "|    $it" }
+            val additionalDeps = options.additionalDependencies.joinToString("\n") { "|    implementation(\"$it\")" }
+            return File(
+                "",
+                "build.gradle.kts",
+                """
+                |plugins {
+                |    id("community.flock.kmapper") version "0.0.0-SNAPSHOT"
+                |    kotlin("jvm") version "${options.kotlinVersion}"
+                |    application
+                ${additionalPlugins}
+                |}
+                |repositories {
+                |  mavenCentral()
+                |  mavenLocal()
+                |}
+                |dependencies {
+                |    implementation(kotlin("stdlib"))
+                ${additionalDeps}
+                |}
+                |kotlin {
+                |  jvmToolchain(21)
+                |}
+                |application {
+                |  mainClass.set("sample.AppKt")
+                |}
+                """.trimMargin()
+            )
+        }
     }
 }

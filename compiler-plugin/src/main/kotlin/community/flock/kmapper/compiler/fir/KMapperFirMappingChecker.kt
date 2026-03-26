@@ -176,7 +176,6 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
 
     private fun ConeKotlinType.resolvePropertyFields(): List<Field> {
         val classSymbol = toRegularClassSymbol(session)
-        if (classSymbol?.moduleData is FirBinaryDependenciesModuleData) return emptyList()
         return classSymbol?.declaredProperties(session)
             .orEmpty()
             .map { property ->
