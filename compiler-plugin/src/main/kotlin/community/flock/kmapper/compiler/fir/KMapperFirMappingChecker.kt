@@ -162,7 +162,8 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
         return resolvedTypeArgument?.resolveConstructorFields()
     }
 
-    private fun ConeKotlinType.resolveConstructorFields(): List<Field> {
+    private fun ConeKotlinType.resolveConstructorFields(visited: MutableSet<ConeKotlinType> = mutableSetOf()): List<Field> {
+        if (!visited.add(this)) return emptyList()
         val classSymbol = toRegularClassSymbol(session)
         if (classSymbol?.moduleData is FirBinaryDependenciesModuleData) return emptyList()
         val primaryConstructor = classSymbol?.constructors(session)?.firstOrNull()
@@ -171,7 +172,7 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
                 name = parameter.name,
                 type = parameter.resolvedReturnType,
                 hasDefaultValue = parameter.hasDefaultValue,
-                fields = parameter.resolvedReturnType.resolveConstructorFields()
+                fields = parameter.resolvedReturnType.resolveConstructorFields(visited)
             )
         }.orEmpty()
     }
@@ -181,7 +182,8 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
         return resolvedTypeArgument?.resolvePropertyFields()
     }
 
-    private fun ConeKotlinType.resolvePropertyFields(): List<Field> {
+    private fun ConeKotlinType.resolvePropertyFields(visited: MutableSet<ConeKotlinType> = mutableSetOf()): List<Field> {
+        if (!visited.add(this)) return emptyList()
         val classSymbol = toRegularClassSymbol(session)
         return classSymbol?.declaredProperties(session)
             .orEmpty()
@@ -190,7 +192,7 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
                     name = property.name,
                     type = property.resolvedReturnType,
                     hasDefaultValue = property.resolvedDefaultValue != null,
-                    fields = property.resolvedReturnType.resolvePropertyFields()
+                    fields = property.resolvedReturnType.resolvePropertyFields(visited)
                 )
             }
     }
