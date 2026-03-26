@@ -569,6 +569,80 @@ class BasicMappingTest {
     }
 
     @Test
+    fun shouldCompile_autoMapWithSerializableTarget() {
+        IntegrationTest(options)
+            .apply {
+                files.removeIf { it.name == "build.gradle.kts" }
+                files.add(
+                    IntegrationTest.File(
+                        "", "build.gradle.kts",
+                        """
+                        |plugins {
+                        |    id("community.flock.kmapper") version "0.0.0-SNAPSHOT"
+                        |    kotlin("jvm") version "2.3.10"
+                        |    kotlin("plugin.serialization") version "2.3.10"
+                        |    application
+                        |}
+                        |repositories {
+                        |  mavenCentral()
+                        |  mavenLocal()
+                        |}
+                        |dependencies {
+                        |    implementation(kotlin("stdlib"))
+                        |    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+                        |}
+                        |kotlin {
+                        |  jvmToolchain(21)
+                        |}
+                        |application {
+                        |  mainClass.set("sample.AppKt")
+                        |}
+                        """.trimMargin()
+                    )
+                )
+            }
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |import kotlinx.serialization.Serializable
+                |
+                |data class Pagination(
+                |    val pageNumber: Int,
+                |    val pageSize: Int,
+                |    val totalElements: Long,
+                |)
+                |
+                |@Serializable
+                |data class PaginationDto(
+                |    val pageNumber: Long,
+                |    val pageSize: Long,
+                |    val totalElements: Long,
+                |)
+                |
+                |fun Pagination.toDto(): PaginationDto = mapper {
+                |    pageNumber = it.pageNumber.toLong()
+                |    pageSize = it.pageSize.toLong()
+                |}
+                |
+                |fun main() {
+                |    val pagination = Pagination(pageNumber = 1, pageSize = 10, totalElements = 100L)
+                |    val dto = pagination.toDto()
+                |    println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("PaginationDto(pageNumber=1, pageSize=10, totalElements=100)"),
+                    "Expected PaginationDto(pageNumber=1, pageSize=10, totalElements=100) in output"
+                )
+            }
+    }
+
+    @Test
     fun shouldFail_missingParameterAge() {
         IntegrationTest(options)
             .file("App.kt") {
