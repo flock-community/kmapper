@@ -468,6 +468,56 @@ class BasicMappingTest {
     }
 
     @Test
+    fun shouldCompile_autoMapSameNamePropertyInDslBlock() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |sealed interface Message {
+                |    val sender: String
+                |    val createdAt: String
+                |    val category: String
+                |
+                |    data class Text(
+                |        override val sender: String,
+                |        override val createdAt: String,
+                |        val text: String,
+                |        override val category: String = "EXECUTION",
+                |    ) : Message
+                |}
+                |
+                |data class TextMessageDto(
+                |    val sender: String,
+                |    val createdAt: String,
+                |    val text: String,
+                |)
+                |
+                |fun Message.Text.toDto(): TextMessageDto = mapper {
+                |    sender = it.sender.uppercase()
+                |    createdAt = it.createdAt
+                |    // text should be auto-mapped since it has the same name and type
+                |}
+                |
+                |fun main() {
+                |    val message = Message.Text(sender = "agent", createdAt = "2025-01-01", text = "hello")
+                |    val dto = message.toDto()
+                |    println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("TextMessageDto(sender=AGENT, createdAt=2025-01-01, text=hello)"),
+                    "Expected TextMessageDto(sender=AGENT, createdAt=2025-01-01, text=hello) in output"
+                )
+            }
+    }
+
+    @Test
     fun shouldFail_missingParameterAge() {
         IntegrationTest(options)
             .file("App.kt") {
