@@ -112,6 +112,65 @@ class SerializableTest {
     }
 
     @Test
+    fun shouldCompile_explicitMappingWithSerializableTargetInSeparateFile() {
+        IntegrationTest(options)
+            .file("Dto.kt") {
+                $$"""
+                |package sample
+                |
+                |import kotlinx.serialization.Serializable
+                |import kotlinx.serialization.SerialName
+                |
+                |@Serializable
+                |@SerialName("RunAnnotationDataDto")
+                |data class RunAnnotationDataDto(
+                |    val runId: String,
+                |    val displayId: String,
+                |    val inputHash: String,
+                |    val outputJson: String,
+                |)
+                |
+                """.trimMargin()
+            }
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class RunAnnotationData(
+                |    val runId: String,
+                |    val sequenceNumber: Int,
+                |    val inputHash: String,
+                |    val outputJson: String,
+                |)
+                |
+                |fun RunAnnotationData.toDto(): RunAnnotationDataDto = mapper {
+                |    displayId = it.sequenceNumber.toString()
+                |}
+                |
+                |fun main() {
+                |    val data = RunAnnotationData(
+                |        runId = "run-1",
+                |        sequenceNumber = 42,
+                |        inputHash = "abc123",
+                |        outputJson = "{}"
+                |    )
+                |    val dto = data.toDto()
+                |    println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("RunAnnotationDataDto(runId=run-1, displayId=42, inputHash=abc123, outputJson={})"),
+                    "Expected RunAnnotationDataDto(runId=run-1, displayId=42, inputHash=abc123, outputJson={}) in output"
+                )
+            }
+    }
+
+    @Test
     fun shouldCompile_allFieldsAutoMappedWithSerializable() {
         IntegrationTest(options)
             .file("App.kt") {
