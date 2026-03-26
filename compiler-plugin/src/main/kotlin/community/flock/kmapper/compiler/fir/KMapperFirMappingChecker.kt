@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.fir.declarations.utils.isEnumClass
 import org.jetbrains.kotlin.fir.expressions.FirAnonymousFunctionExpression
 import org.jetbrains.kotlin.fir.expressions.FirCall
 import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
+import org.jetbrains.kotlin.fir.expressions.FirQualifiedAccessExpression
 import org.jetbrains.kotlin.fir.expressions.arguments
 import org.jetbrains.kotlin.fir.expressions.explicitReceiver
 import org.jetbrains.kotlin.fir.expressions.toReference
@@ -96,10 +97,13 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
                                 val propSymbol = call.explicitReceiver
                                     ?.toReference(session)
                                     ?.toResolvedPropertySymbol()
+                                val propName = propSymbol?.name
+                                    ?: (call.explicitReceiver as? FirQualifiedAccessExpression)
+                                        ?.calleeReference?.let { it as? FirNamedReference }?.name
                                 val valueExpr = call.arguments.firstOrNull()
-                                if (propSymbol != null && valueExpr != null) {
+                                if (propName != null && valueExpr != null) {
                                     Field(
-                                        name = propSymbol.name,
+                                        name = propName,
                                         type = valueExpr.resolvedType,
                                         hasDefaultValue = false,
                                         fields = valueExpr.resolvedType.resolveConstructorFields()
@@ -110,9 +114,12 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
                                 val propSymbol = call.extensionReceiver
                                     ?.toReference(session)
                                     ?.toResolvedPropertySymbol()
-                                if (propSymbol != null) {
+                                val propName = propSymbol?.name
+                                    ?: (call.extensionReceiver as? FirQualifiedAccessExpression)
+                                        ?.calleeReference?.let { it as? FirNamedReference }?.name
+                                if (propName != null) {
                                     // Find the matching toField to include its type info
-                                    toFields.find { it.name == propSymbol.name }
+                                    toFields.find { it.name == propName }
                                 } else null
                             }
                             else -> null
