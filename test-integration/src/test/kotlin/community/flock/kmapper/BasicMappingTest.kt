@@ -643,6 +643,172 @@ class BasicMappingTest {
     }
 
     @Test
+    fun shouldCompile_valueClassAutoMapInDslBlock() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |@JvmInline
+                |value class ModelId(val value: String)
+                |@JvmInline
+                |value class TaskDesc(val value: String)
+                |
+                |data class Run(
+                |    val id: String,
+                |    val modelIdentifier: ModelId,
+                |    val taskDescription: TaskDesc,
+                |    val isViewed: Boolean,
+                |)
+                |
+                |data class RunDto(
+                |    val id: String,
+                |    val modelIdentifier: String,
+                |    val taskDescription: String,
+                |    val isViewed: Boolean,
+                |)
+                |
+                |fun Run.toDto(): RunDto = mapper {
+                |    isViewed = it.isViewed
+                |}
+                |
+                |fun main() {
+                |    val run = Run(id = "1", modelIdentifier = ModelId("gpt-4"), taskDescription = TaskDesc("do stuff"), isViewed = true)
+                |    val dto = run.toDto()
+                |    println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("RunDto(id=1, modelIdentifier=gpt-4, taskDescription=do stuff, isViewed=true)"),
+                    "Expected RunDto(id=1, modelIdentifier=gpt-4, taskDescription=do stuff, isViewed=true) in output but got: $output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_valueClassAutoMapInDslBlockWithSerializable() {
+        IntegrationTest(
+            options.copy(
+                additionalPlugins = listOf("""kotlin("plugin.serialization") version "${options.kotlinVersion}""""),
+                additionalDependencies = listOf("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1"),
+            )
+        )
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |import kotlinx.serialization.Serializable
+                |import kotlinx.serialization.SerialName
+                |
+                |@JvmInline
+                |value class ModelId(val value: String)
+                |@JvmInline
+                |value class TaskDesc(val value: String)
+                |
+                |data class Run(
+                |    val id: String,
+                |    val modelIdentifier: ModelId,
+                |    val taskDescription: TaskDesc,
+                |    val isViewed: Boolean,
+                |)
+                |
+                |@Serializable
+                |@SerialName("RunDto")
+                |data class RunDto(
+                |    val id: String,
+                |    val modelIdentifier: String,
+                |    val taskDescription: String,
+                |    val isViewed: Boolean,
+                |)
+                |
+                |fun Run.toDto(): RunDto = mapper {
+                |    isViewed = it.isViewed
+                |}
+                |
+                |fun main() {
+                |    val run = Run(id = "1", modelIdentifier = ModelId("gpt-4"), taskDescription = TaskDesc("do stuff"), isViewed = true)
+                |    val dto = run.toDto()
+                |    println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("RunDto(id=1, modelIdentifier=gpt-4, taskDescription=do stuff, isViewed=true)"),
+                    "Expected RunDto(id=1, modelIdentifier=gpt-4, taskDescription=do stuff, isViewed=true) in output but got: $output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_selfReferencingType() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class Category(val name: String, val parent: Category?)
+                |data class CategoryDto(val name: String, val parent: Category?)
+                |
+                |fun main() {
+                |    val category = Category("child", Category("root", null))
+                |    val dto: CategoryDto = category.mapper()
+                |    println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("CategoryDto(name=child, parent=Category(name=root, parent=null))"),
+                    "Expected CategoryDto(name=child, parent=Category(name=root, parent=null)) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldCompile_nestedLambdaInMapperBlock() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |data class User(val firstName: String, val tags: List<String>)
+                |data class UserDto(val name: String, val tags: List<String>)
+                |
+                |fun User.toDto(): UserDto = mapper {
+                |    name = it.firstName
+                |    tags = it.tags.map { tag -> tag.uppercase() }
+                |}
+                |
+                |fun main() {
+                |    val user = User("Alice", listOf("kotlin", "java"))
+                |    val dto = user.toDto()
+                |    println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("UserDto(name=Alice, tags=[KOTLIN, JAVA])"),
+                    "Expected UserDto(name=Alice, tags=[KOTLIN, JAVA]) in output"
+                )
+            }
+    }
+
+    @Test
     fun shouldFail_missingParameterAge() {
         IntegrationTest(options)
             .file("App.kt") {

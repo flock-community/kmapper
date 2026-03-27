@@ -119,12 +119,31 @@ class KMapperIrBuildMapperVisitor(
         val fromTypeArgument = expression.typeArguments[1] ?: error("Could not resolve source type for mapper")
 
         val remapper = object : IrElementTransformerVoid() {
+            // The mapper lambda has two parameters:
+            // 1. Extension receiver ($this$mapper): the TO type being constructed
+            // 2. Regular parameter (it): the FROM source instance
+            // When extracting value expressions from the lambda body, we need to remap
+            // both parameters. The FROM parameter (it) is replaced with the actual receiver.
+            // The TO parameter ($this$mapper) may be captured in nested lambda closures
+            // even if not explicitly used; we must also remap it to avoid dangling references
+            // after the lambda is removed from the IR tree.
+            val itParamSymbol = callArgument?.function?.parameters
+                ?.firstOrNull { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }
+                ?.symbol
+            val thisParamSymbol = callArgument?.function?.parameters
+                ?.firstOrNull { it.kind == IrParameterKind.ExtensionReceiver }
+                ?.symbol
+
             override fun visitGetValue(expression: IrGetValue): IrExpression {
                 val transformedGetValue = super.visitGetValue(expression)
-                val itParamSymbol = callArgument?.function?.parameters
-                    ?.firstOrNull { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }
-                    ?.symbol
                 if (expression.symbol == itParamSymbol) {
+                    return receiverArgument.deepCopyWithSymbols()
+                }
+                // The TO extension receiver ($this$mapper) may be captured by nested lambdas.
+                // Since the TO object is being constructed (not yet available), we replace
+                // references with the receiver argument. This is safe because the captured
+                // reference is never actually accessed at runtime — only present in the closure.
+                if (expression.symbol == thisParamSymbol) {
                     return receiverArgument.deepCopyWithSymbols()
                 }
                 return transformedGetValue
