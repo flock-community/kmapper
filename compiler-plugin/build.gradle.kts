@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "2.3.10"
+    kotlin("jvm") version "2.3.20"
     id("maven-publish")
     id("org.jetbrains.dokka")
     id("com.gradleup.kctf").version("2.3.10-0.0.2-SNAPSHOT-a524b7d38d0ad625c3b891df859cc0be4b9c339b")

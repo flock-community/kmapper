@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.3.10"
+    kotlin("jvm") version "2.3.20"
 }
 
 group = rootProject.group
@@ -10,7 +10,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.2")
     implementation(gradleTestKit())
-    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.3.10")
+    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.3.20")
 }
 
 kotlin {
