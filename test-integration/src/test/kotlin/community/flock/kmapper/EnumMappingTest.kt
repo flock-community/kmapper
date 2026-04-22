@@ -43,7 +43,7 @@ class EnumMappingTest {
     }
 
     @Test
-    fun shouldFail_notEqualEnums() {
+    fun shouldCompile_sourceSubsetOfTarget() {
         IntegrationTest(options)
             .file("App.kt") {
                 $$"""
@@ -51,11 +51,42 @@ class EnumMappingTest {
                 |
                 |import community.flock.kmapper.mapper
                 |
-                |enum class Gender { MALE, FEMALE }
+                |enum class Generation { GEN_Z, BOOMER }
+                |data class Person(val name: String, val age: Int, val generation: Generation)
+                |
+                |enum class GenerationDto { GEN_Z, MILLENNIALS, BOOMER }
+                |data class PersonDto(val name: String, val age: Int, val generation: GenerationDto)
+                |
+                |fun main() {
+                |  val person = Person("John", 30, Generation.GEN_Z)
+                |  val dto: PersonDto = person.mapper()
+                |  println(dto)
+                |}
+                |
+                """.trimMargin()
+            }
+            .compileSuccess { output ->
+                assertTrue(
+                    output.contains("PersonDto(name=John, age=30, generation=GEN_Z)"),
+                    "Expected PersonDto(name=John, age=30, generation=GEN_Z) in output"
+                )
+            }
+    }
+
+    @Test
+    fun shouldFail_sourceSupersetOfTarget() {
+        IntegrationTest(options)
+            .file("App.kt") {
+                $$"""
+                |package sample
+                |
+                |import community.flock.kmapper.mapper
+                |
+                |enum class Gender { MALE, FEMALE, OTHER }
                 |data class Address(val street: String, val city: String)
                 |data class Person(val name: String, val gender: Gender, val address: Address)
                 |
-                |enum class GenderDto { FEMALE, MALE, X }
+                |enum class GenderDto { FEMALE, MALE }
                 |data class AddressDto(val street: String, val city: String)
                 |data class PersonDto(val name: String, val gender: GenderDto, val address: AddressDto)
                 |
