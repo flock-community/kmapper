@@ -70,7 +70,7 @@ class KMapperFirMappingChecker(val collector: MessageCollector, private val sess
             if (fromEnum != null && toEnum != null) {
                 val fromEntries = fromEnum.enumEntryNames().toSet()
                 val toEntries = toEnum.enumEntryNames().toSet()
-                if (fromEntries == toEntries) return
+                if (toEntries.containsAll(fromEntries)) return
             }
         }
 

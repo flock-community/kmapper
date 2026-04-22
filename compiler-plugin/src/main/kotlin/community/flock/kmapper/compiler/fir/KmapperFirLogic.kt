@@ -101,7 +101,7 @@ private fun enumsEqual(to: Field, from: Field): Boolean {
         to.type.toRegularClassSymbol(session)?.takeIf { it.isEnumClass }?.enumEntryNames()?.toSet() ?: return false
     val fromEntries = from.type.toRegularClassSymbol(session)?.takeIf { it.isEnumClass }?.enumEntryNames()?.toSet()
         ?: return false
-    return toEntries == fromEntries
+    return toEntries.containsAll(fromEntries)
 }
 
 context(session: FirSession, collector: MessageCollector)
