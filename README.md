@@ -304,6 +304,12 @@ val dto: PersonDto = Person("John").mapper {
 
 The plugin automatically generates the mapping implementation at compile time, replacing the `mapper` function call with the actual object construction code.
 
+### Performance
+
+Because KMapper is a compile-time codegen plugin (no reflection, no runtime registry), the generated code is equivalent to a hand-written constructor call and runtime overhead is essentially zero.
+
+This is verified by JMH benchmarks in [`benchmarks/`](benchmarks/), which compare `mapper { ... }` against hand-written equivalents for both a flat 3-field mapping and a nested mapping with value classes, lists, enums, and numeric widening. The CI pipeline runs the suite on every PR and fails the build if a kmapper benchmark is more than 5× slower than its manual counterpart, guarding against accidental regressions.
+
 
 
 Notes:

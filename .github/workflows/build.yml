@@ -23,3 +23,45 @@ jobs:
 
     - name: Build and test
       run: ./gradlew build
+
+  benchmarks:
+    # Smoke-tests the :benchmarks module on every PR. The threshold gate fails
+    # the build only on catastrophic regressions (kmapper >5x slower than the
+    # hand-written equivalent) — GitHub-hosted runners are too noisy to detect
+    # smaller deltas reliably. The full JMH JSON report is uploaded as an
+    # artifact for human review.
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+
+    - name: Publish kmapper artifacts to mavenLocal
+      run: |
+        ./gradlew \
+          :compiler-plugin:publishToMavenLocal \
+          :compiler-runtime:publishToMavenLocal \
+          :gradle-plugin:publishToMavenLocal
+
+    - name: Run benchmarks with threshold gate
+      run: |
+        ./gradlew -Pkmapper.benchmarks=true \
+          :benchmarks:verifyBenchmarkThresholds
+
+    - name: Upload JMH report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: jmh-report
+        path: benchmarks/build/reports/benchmarks/
+        if-no-files-found: warn
