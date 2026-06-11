@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    kotlin("jvm") version "2.3.20"
+    kotlin("jvm") version "2.4.0"
     id("maven-publish")
     id("org.jetbrains.dokka")
     signing

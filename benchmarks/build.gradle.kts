@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.3.20"
-    kotlin("plugin.allopen") version "2.3.20"
+    kotlin("jvm") version "2.4.0"
+    kotlin("plugin.allopen") version "2.4.0"
     id("org.jetbrains.kotlinx.benchmark") version "0.4.13"
     id("community.flock.kmapper") version "0.0.0-SNAPSHOT"
     application
