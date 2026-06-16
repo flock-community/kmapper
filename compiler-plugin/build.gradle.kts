@@ -1,8 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "2.3.20"
+    kotlin("jvm") version "2.4.0"
     id("maven-publish")
     id("org.jetbrains.dokka")
     id("com.gradleup.kctf").version("2.3.10-0.0.2-SNAPSHOT-a524b7d38d0ad625c3b891df859cc0be4b9c339b")
@@ -22,7 +23,14 @@ val kMapperRuntimeClasspath: Configuration by configurations.creating {
 
 dependencies {
     compileOnly(kotlin("compiler-embeddable"))
-    testImplementation("com.gradleup.kctf:kctf-runtime:2.3.10-0.0.2-SNAPSHOT-a524b7d38d0ad625c3b891df859cc0be4b9c339b")
+    // kctf-runtime is not published for Kotlin 2.4 yet, so the compiler test
+    // framework is depended on directly and kctf's classpath-based stdlib path
+    // provider is vendored in src/test/kotlin/kctf.
+    testImplementation(kotlin("compiler", getKotlinPluginVersion()))
+    testImplementation(kotlin("compiler-internal-test-framework", getKotlinPluginVersion()))
+    testRuntimeOnly(kotlin("reflect", getKotlinPluginVersion()))
+    testRuntimeOnly(kotlin("script-runtime", getKotlinPluginVersion()))
+    testRuntimeOnly(kotlin("annotations-jvm", getKotlinPluginVersion()))
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation(project(":compiler-runtime"))
     add(kMapperRuntimeClasspath.name, project(":compiler-runtime"))
@@ -34,7 +42,6 @@ kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
     }
-    compilerOptions.freeCompilerArgs.add("-Xcontext-parameters")
 }
 
 val javadocJar by tasks.registering(Jar::class) {

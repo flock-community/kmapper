@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 class ListMappingTest {
 
     val options = IntegrationTest.Options(
-        kotlinVersion = "2.3.10",
+        kotlinVersion = "2.4.0",
     )
 
     @Test

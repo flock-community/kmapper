@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 class BasicMappingTest {
 
     val options = IntegrationTest.Options(
-        kotlinVersion = "2.3.10",
+        kotlinVersion = "2.4.0",
     )
 
     @Test
@@ -579,8 +579,8 @@ class BasicMappingTest {
                         """
                         |plugins {
                         |    id("community.flock.kmapper") version "0.0.0-SNAPSHOT"
-                        |    kotlin("jvm") version "2.3.10"
-                        |    kotlin("plugin.serialization") version "2.3.10"
+                        |    kotlin("jvm") version "2.4.0"
+                        |    kotlin("plugin.serialization") version "2.4.0"
                         |    application
                         |}
                         |repositories {

@@ -26,7 +26,11 @@ sourceSets {
 }
 
 dependencies {
-    implementation(kotlin("gradle-plugin-api"))
+    // compileOnly so the consumer project's own Kotlin Gradle Plugin provides
+    // this API at runtime. With implementation scope the published POM would
+    // drag this version of KGP onto the consumer's plugin classpath, silently
+    // overriding the Kotlin version the project asked for.
+    compileOnly(kotlin("gradle-plugin-api"))
 
     testImplementation(kotlin("test-junit5"))
 }
