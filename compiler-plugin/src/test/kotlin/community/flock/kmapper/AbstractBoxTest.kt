@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.JvmTarget
+import org.jetbrains.kotlin.config.MessageCollectorAccess
 import org.jetbrains.kotlin.config.messageCollector
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
 import org.jetbrains.kotlin.test.TestMetadata
@@ -69,7 +70,7 @@ class RuntimeClassPathProvider(testServices: TestServices) :
 
 class MetroExtensionRegistrarConfigurator(testServices: TestServices) :
     EnvironmentConfigurator(testServices) {
-    @OptIn(ExperimentalCompilerApi::class)
+    @OptIn(ExperimentalCompilerApi::class, MessageCollectorAccess::class)
     override fun CompilerPluginRegistrar.ExtensionStorage.registerCompilerExtensions(
         module: TestModule,
         configuration: CompilerConfiguration,

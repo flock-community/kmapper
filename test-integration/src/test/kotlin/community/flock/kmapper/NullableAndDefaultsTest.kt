@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 class NullableAndDefaultsTest {
 
     val options = IntegrationTest.Options(
-        kotlinVersion = "2.4.0",
+        kotlinVersion = "2.4.20",
     )
 
     @Test
