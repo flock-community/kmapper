@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test
 class SerializableTest {
 
     val options = IntegrationTest.Options(
-        kotlinVersion = "2.4.0",
-        additionalPlugins = listOf("""kotlin("plugin.serialization") version "2.4.0""""),
+        kotlinVersion = "2.4.20",
+        additionalPlugins = listOf("""kotlin("plugin.serialization") version "2.4.20""""),
         additionalDependencies = listOf("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1"),
     )
 
